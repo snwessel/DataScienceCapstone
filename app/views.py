@@ -1,10 +1,12 @@
-from app import app
+from app import app, models
 from flask import render_template
 
 @app.route("/")
 def index():
-  return render_template('index.html', state=None)
+  states = models.DataLoader.load_states()
+  return render_template('index.html', state=None, states=states)
 
 @app.route("/state/<state>")
 def index_state(state):
-  return render_template('index.html', state=state)
+  states = models.DataLoader.load_states()
+  return render_template('index.html', state=state, states=states)

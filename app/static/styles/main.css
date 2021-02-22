@@ -9,3 +9,7 @@ h1 {
 .navbar {
   background-color: #1d3557;
 }
+
+.state-select {
+  max-width: 15rem;
+}

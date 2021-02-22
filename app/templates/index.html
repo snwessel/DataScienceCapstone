@@ -5,9 +5,23 @@
   <p class="font-italic">This is a brief description of our project...</p>
   <section>
     <h1>Predictions</h1>
-    <p>State: {{ state }}</p>
+    <p>Selected State: {{ state }}</p>
+    <div class="input-group mb-3">
+      <div class="input-group-prepend">
+        <label class="input-group-text" for="inputGroupSelect01">State</label>
+      </div>
+      <select class="custom-select state-select">
+        {% for state_name in states.keys() %}
+          <option>{{ state_name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <!-- TODO create prediction graph (like https://plotly.com/javascript/continuous-error-bars/) -->
   </section>
   <section>
     <h1>Data Exploration</h1>
+    <!-- TODO: make exploration graphs-->
+    <!-- Potential exploration graph type https://plotly.com/javascript/splom/ -->
+    <!-- Basic scatterplot https://plotly.com/javascript/line-and-scatter/-->
   </section>
 {% endblock %}
