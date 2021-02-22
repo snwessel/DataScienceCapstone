@@ -1,6 +1,5 @@
-# Byte-compiled / optimized / DLL files
+# Python stuff
 __pycache__/
-
 env/
 
 # Flask stuff:
