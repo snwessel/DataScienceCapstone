@@ -2,6 +2,10 @@ body {
   background-color: #fafaee;
 }
 
+h1 {
+  padding-top: 1rem;
+}
+
 .navbar {
   background-color: #1d3557;
 }
