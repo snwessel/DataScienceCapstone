@@ -7,6 +7,12 @@ function render_prediction_visualization(dailyCases) {
       type: 'scatter'
     }
   ];
+
+  var layout = { 
+    title: 'Daily Covid Cases'
+  };
   
-  Plotly.newPlot('prediction_dataviz', data);
+  var config = {responsive: true}
+  
+  Plotly.newPlot('prediction_dataviz', data, layout, config);
 }

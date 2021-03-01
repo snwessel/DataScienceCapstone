@@ -6,18 +6,24 @@
   <section>
     <h1>Predictions</h1>
     <p>Selected State: {{ state }}</p>
-    <div class="input-group mb-3">
-      <div class="input-group-prepend">
-        <label class="input-group-text" for="inputGroupSelect01">State</label>
-      </div>
-      <select class="custom-select state-select">
+
+    <div class="dropdown">
+      <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+        Select State
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         {% for state_name in states.keys() %}
-          <option>{{ state_name }}</option>
+        <a class="dropdown-item" href="/state/{{ states[state_name]}}">{{ state_name }}</a>
         {% endfor %}
-      </select>
+      </div>
     </div>
+
     <!-- TODO create prediction graph (like https://plotly.com/javascript/continuous-error-bars/) -->
-    <div id="prediction_dataviz"></div>
+    <div class="row pt-5">
+      <div class="col">
+        <div id="prediction_dataviz"></div>
+      </div>
+    </div>
     <script>
       // convert the data from json to a JS object
       var dailyCases = {{ daily_cases|tojson }};
