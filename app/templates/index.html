@@ -19,9 +19,8 @@
     <!-- TODO create prediction graph (like https://plotly.com/javascript/continuous-error-bars/) -->
     <div id="prediction_dataviz"></div>
     <script>
-      // convert the data from json to a JS object of the correct format
+      // convert the data from json to a JS object
       var dailyCases = {{ daily_cases|tojson }};
-      dailyCases = dailyCases.map(d => ({ date : d3.timeParse("%Y-%m-%dT%H:%M:%S.%f")(d["created_at"]), value : d["new_case"] }))
       
       // create the visualizations
       render_prediction_visualization(dailyCases)
