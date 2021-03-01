@@ -1,4 +1,6 @@
 import csv
+import pandas as pd
+from sodapy import Socrata
 
 # Class definitions for any python utils
 
@@ -17,8 +19,14 @@ class DataLoader:
 
   def get_daily_cases(state_abbrev):
     """Load daily case counts from the CDC API"""
-    # TODO: implement
-    pass
+    # Query the CDC API
+    client = Socrata("data.cdc.gov", None)
+    results = client.get("9mfq-cb36", state=state_abbrev)
+    results_df = pd.DataFrame.from_records(results)
+    # return the new cases by date in a javascript-friendly format
+    cases_by_date_df = results_df[["new_case", "created_at"]]
+    cases_by_date_df = cases_by_date_df.sort_values(by=['created_at'])
+    return list(cases_by_date_df.T.to_dict().values())
 
   def get_daily_vaccinations(state_abbrev):
     """Load daily vaccination counts from CSV"""
