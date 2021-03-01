@@ -1,6 +1,8 @@
 # Python stuff
 __pycache__/
 env/
+dscapstone/
+__init__.pyc
 
 # Flask stuff:
 instance/
