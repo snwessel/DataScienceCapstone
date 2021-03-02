@@ -17,12 +17,18 @@ class DataLoader:
         states_dict[row[0]] = row[1]
     return states_dict
 
-  def get_daily_cases(state_abbrev):
-    """Load daily case counts from the CDC API"""
+  def get_daily_cases_df(state_abbrev):
+    """Load daily case counts from the CDC API, return a pandas dataframe."""
     # Query the CDC API
     client = Socrata("data.cdc.gov", None)
     results = client.get("9mfq-cb36", state=state_abbrev)
-    results_df = pd.DataFrame.from_records(results).sort_values(by=['created_at'])
+    results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
+    return results_df[["created_at", "new_case"]]
+
+
+  def get_daily_cases_dict(state_abbrev):
+    """Load daily case counts from the CDC API, return a dictionary which can be passed into JS"""
+    results_df = DataLoader.get_daily_cases_df(state_abbrev)
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
       "date": results_df["created_at"].tolist(),

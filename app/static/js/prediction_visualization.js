@@ -12,7 +12,7 @@ function render_prediction_visualization(dailyCases) {
     title: 'Daily Covid Cases'
   };
   
-  var config = {responsive: true}
-  
+  var config = {responsive: true};
+
   Plotly.newPlot('prediction_dataviz', data, layout, config);
 }
