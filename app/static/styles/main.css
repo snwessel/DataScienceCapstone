@@ -13,3 +13,8 @@ h1 {
 .state-select {
   max-width: 15rem;
 }
+
+.dropdown-menu {
+  max-height: 15rem;
+  overflow-y: auto;
+}
