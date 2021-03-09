@@ -1,5 +1,7 @@
 import pandas as pd
-from fbprophet import Prophet
+import torch
+import torch.nn as nn
+from torch.autograd import Variable 
 
 # An interface for interacting with machine learning models
 class MLModel:
@@ -12,26 +14,51 @@ class MLModel:
     # We may need to pass in the state data too
     pass 
 
-
-# An implementation of the interface using Facebook's prophet model.
-# Note: this model currently only looks at the case counts (not vaccinations).
-# I'm not sure if there is a way to factor the vaccinations into this particular model.
-class ProphetModel(MLModel):
-
+class LSTM(nn.Module):
   def __init__(self):
-    self.model = Prophet()
+    self.input_dim = 2
+    self.hidden_size = 20
+    self.n_layers = 1
+    self.lstm = nn.LSTM(self.input_dim, self.hidden_size, self.n_layers)
+    # TODO: add a linear layer at the end here??
 
-  def fit(self, daily_cases, daily_vaccinations):
+  def forward(self, x):
     """Train the model to fit the data"""
-    self.model.fit(daily_cases)
+    h_0 = Variable(torch.zeros(
+          self.n_layers, x.size(0), self.hidden_size)) #hidden state
+    c_0 = Variable(torch.zeros(
+        self.n_layers, x.size(0), self.hidden_size)) #internal state
+   
+    # Propagate input through LSTM
+    output, (hn, cn) = self.lstm(x, (h_0, c_0)) #lstm with input, hidden, and internal state
+    # hn = hn.view(-1, self.hidden_size) #reshaping the data for Dense layer next
+    # out = self.relu(hn)
+    # out = self.fc_1(out) #first Dense
+    # out = self.relu(out) #relu
+    # out = self.fc(out) #Final Output
+    return output 
 
-  def predict(self, num_days):
-    """Predict the given number of days"""
-    # the prediction dataframe contains the following fields: DS, YHAT, YHAT, YHAT_UPPER
-    # the dataframe should also include the prior values
-    future = self.model.make_future_dataframe(periods=365)
-    forecast = self.model.predict(future)
+  def backward(self, outputs, y_train_tensors, learning_rate):
+    criterion = torch.nn.MSELoss()    # mean-squared error for regression
+    optimizer = torch.optim.Adam(self.lstm.parameters(), lr=learning_rate) 
+    optimizer.zero_grad() #caluclate the gradient, manually setting to 0
+  
+    # obtain the loss function
+    loss = criterion(outputs, y_train_tensors)
+  
+    loss.backward() #calculates the loss of the loss function
+    optimizer.step() #improve from loss, i.e backprop
+    return loss
 
-    # temporary: plot the output:
-    self.model.plot_components(forecast)
-    return future
+
+
+def train_LSTM(X_train_tensors, y_train_tensors, learning_rate):
+  lstm = LSTM()
+
+  for epoch in range(100):
+    outputs = lstm.forward(X_train_tensors) #forward pass
+    loss = lstm.backward(outputs, y_train_tensors, learning_rate) # backward pass
+
+    if epoch % 100 == 0:
+      print("Epoch: %d, loss: %1.5f" % (epoch, loss.item())) # logging
+
