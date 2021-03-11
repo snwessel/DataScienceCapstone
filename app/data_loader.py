@@ -1,4 +1,5 @@
 import csv
+import re
 import requests
 import pandas as pd
 import numpy as np
@@ -20,13 +21,21 @@ class DataLoader:
         states_dict[row[0]] = row[1]
     return states_dict
 
+
   def get_daily_cases_df(state_abbrev):
     """Load daily case counts from the CDC API, return a pandas dataframe."""
     # Query the CDC API
     client = Socrata("data.cdc.gov", None)
     results = client.get("9mfq-cb36", state=state_abbrev)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
-    return results_df[["created_at", "new_case"]]
+    # update the date formatting
+    trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True)
+    # remove duplicate case counts
+    dup_idxs = np.where(trimmed_df["created_at"].duplicated())
+    trimmed_df = trimmed_df.reset_index()
+    filtered_df = trimmed_df.drop(dup_idxs[0])
+
+    return filtered_df[["created_at", "new_case"]]
 
 
   def get_daily_cases_dict(state_abbrev):
@@ -38,6 +47,7 @@ class DataLoader:
       "cases": results_df["new_case"].tolist()
     }
     return cases_by_date_dict
+
 
   def get_daily_vaccinations_df(state_abbrev):
     """Load daily vaccination counts from CSV, return a pandas dataframe. CSV contains data up to 3/6/2021."""
@@ -51,6 +61,7 @@ class DataLoader:
     daily_state_vax_df = state_vax_df[["date", "location", "abbrev", "daily_vaccinations"]]
     return daily_state_vax_df
 
+
   def get_daily_vaccinations_dict(state_abbrev):
     """Load daily vaccination counts from the CDC CSV, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_daily_vaccinations_df(state_abbrev)
@@ -60,6 +71,21 @@ class DataLoader:
       "vaccinations": results_df["daily_vaccinations"].tolist()
     }
     return vaccinations_by_date_dict
+
+
+  def get_case_and_vax_df():
+    # load the case and vaccination data
+    case_data = DataLoader.get_daily_cases_df("MA")
+    vax_data = DataLoader.get_daily_vaccinations_df("MA")
+
+    # merge the dataframes
+    merged_df = pd.merge(case_data, vax_data, left_on="created_at", right_on="date", how="left")
+    # pull out only the daily counts
+    cleaned_df = merged_df[["new_case", "daily_vaccinations"]]
+    # replace NA vaccine values with 0s
+    cleaned_df = cleaned_df.fillna(0)
+    return cleaned_df
+
 
   def get_national_cases_df():
     """Load national daily case counts from the CDC API, return a pandas dataframe."""
@@ -80,6 +106,7 @@ class DataLoader:
 
     return agg_df[["created_at", "new_case"]]
 
+
   def get_national_cases_dict():
     """Load national daily case counts from the CDC API, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_national_cases_df()
@@ -89,6 +116,7 @@ class DataLoader:
       "cases": results_df["new_case"].tolist()
     }
     return cases_by_date_dict
+
 
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
@@ -117,6 +145,7 @@ class DataLoader:
 
     return census_df
 
+
   def get_state_population_counts_dict():
     """Load state population estimate counts from the Census Bureau API, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_state_population_counts_df()
@@ -126,6 +155,7 @@ class DataLoader:
       "population": results_df["state_pop"].tolist()
     }
     return state_pop_dict
+
 
   def get_social_distancing_df(state_abbrev):
     """Load most up to date social distancing policies from CSV, return a pandas dataframe. CSV contains data up to 3/9/2021."""
@@ -142,6 +172,7 @@ class DataLoader:
 
     state_policy_df = social_dist_df[social_dist_df["Abbreviation"] == state_abbrev]
     return state_policy_df
+  
   
   def get_social_distancing_dict(state_abbrev):
     """Load most up to date social distancing policies from CSV, return a dictionary which can be passed into JS"""

@@ -1,9 +1,6 @@
-import re
-import pandas as pd
 import torch
 import torch.nn as nn
 from torch.autograd import Variable 
-from app import data_loader
 
 # An interface for interacting with machine learning models
 class MLModel:
@@ -64,32 +61,6 @@ def train_LSTM(X_train_tensors, y_train_tensors, learning_rate):
     if epoch % 100 == 0:
       print("Epoch: %d, loss: %1.5f" % (epoch, loss.item())) # logging
 
-def data_prep():
-    # Currently just splitting arbitrarily, potentially can look into TimeSeriesSplit later...
-    case_data = DataLoader.get_daily_cases_df("MA")
-    vax_data = DataLoader.get_daily_vaccinations_df("MA")
 
-    trimmed_df = case_data.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True)
-    dup_idxs = np.where(trimmed_df["created_at"].duplicated())
-    trimmed_df = trimmed_df.reset_index()
-    filt_df = trimmed_df.drop(dup_idxs[0])
-
-    ma_case_df = filt_df[["created_at", "new_case"]]
-    merged_df = pd.merge(ma_case_df, vax_data, left_on="created_at", right_on="date", how="left")
-
-    cleaned_df = merged_df[["new_case", "daily_vaccinations"]]
-    fill_na_df = cleaned_df.fillna(0)
-
-    case_and_vax_arrays = fill_na_df.values
-    case_arrays = fill_na_df["new_case"].values
-
-    # train test split ? unsure about what should be X/y here...
-    X_train = case_and_vax_arrays[:200, :]
-    X_test = case_and_vax_arrays[200:, :]
-
-    y_train = case_arrays[:200, :]
-    y_test = case_arrays[200:, :]
-
-    return X_train, y_train, X_test, y_test
 
 
