@@ -1,10 +1,9 @@
 import csv
-import re
 import requests
 import pandas as pd
 import numpy as np
 from sodapy import Socrata
-from delphi_epidata import Epidata
+# from delphi_epidata import Epidata
 
 # Utils for loading data
 
@@ -23,17 +22,21 @@ class DataLoader:
 
 
   def get_daily_cases_df(state_abbrev):
-    """Load daily case counts from the CDC API, return a pandas dataframe."""
+    """Load daily case counts from the CDC API, clean data, return a pandas dataframe."""
     # Query the CDC API
     client = Socrata("data.cdc.gov", None)
     results = client.get("9mfq-cb36", state=state_abbrev)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
+
     # update the date formatting
     trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True)
     # remove duplicate case counts
     dup_idxs = np.where(trimmed_df["created_at"].duplicated())
     trimmed_df = trimmed_df.reset_index()
     filtered_df = trimmed_df.drop(dup_idxs[0])
+    # get a 7 day average
+    filtered_df["new_case"] = filtered_df["new_case"].rolling(window=7).mean()
+    filtered_df = filtered_df.dropna()
 
     return filtered_df[["created_at", "new_case"]]
 
@@ -74,6 +77,7 @@ class DataLoader:
 
 
   def get_case_and_vax_df():
+    """Get a dataframe containing the daily case counts and vaccinations"""
     # load the case and vaccination data
     case_data = DataLoader.get_daily_cases_df("MA")
     vax_data = DataLoader.get_daily_vaccinations_df("MA")
@@ -197,7 +201,7 @@ class DataLoader:
     """Load influenza counts from the CMU Delphi API, return a pandas dataframe"""
     # This retrieves national data, state data can be retrieved changing nat to state abbrev
     # TODO: figure out epiweeks??? and what equals which days??? if there are days?
-    results = Epidata.fluview(regions="nat", epiweeks=202021)
+    # results = Epidata.fluview(regions="nat", epiweeks=202021)
     # Example results:
     # {'result': 1,
     #   'epidata': [{'release_date': '2021-03-05',
@@ -217,7 +221,7 @@ class DataLoader:
     #     'wili': 1.00711,
     #     'ili': 1.07708}],
     #   'message': 'success'}
-    retun None
+    pass
 
   # TODO: implement
   def get_infuenza_counts_dict():
