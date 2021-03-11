@@ -61,7 +61,10 @@ class DataLoader:
     vax_df["abbrev"] = vax_df["location"].map(states_dict)
 
     state_vax_df = vax_df[vax_df["abbrev"] == state_abbrev]
-    daily_state_vax_df = state_vax_df[["date", "location", "abbrev", "daily_vaccinations"]]
+    
+    # get the daily total vaccinations per million
+    state_vax_df["total_vaccinations_per_million"] = state_vax_df["daily_vaccinations_per_million"].fillna(0).cumsum()
+    daily_state_vax_df = state_vax_df[["date", "location", "abbrev", "total_vaccinations_per_million"]]
     return daily_state_vax_df
 
 
@@ -71,7 +74,7 @@ class DataLoader:
     # return the new vaccinations by date in a javascript-friendly format
     vaccinations_by_date_dict = {
       "date": results_df["date"].tolist(),
-      "vaccinations": results_df["daily_vaccinations"].tolist()
+      "vaccinations": results_df["total_vaccinations_per_million"].tolist()
     }
     return vaccinations_by_date_dict
 
@@ -84,10 +87,8 @@ class DataLoader:
 
     # merge the dataframes
     merged_df = pd.merge(case_data, vax_data, left_on="created_at", right_on="date", how="left")
-    # pull out only the daily counts
-    cleaned_df = merged_df[["new_case", "daily_vaccinations"]]
-    # replace NA vaccine values with 0s
-    cleaned_df = cleaned_df.fillna(0)
+    # pull out only the values we need
+    cleaned_df = merged_df[["new_case", "total_vaccinations_per_million"]]
     return cleaned_df
 
 

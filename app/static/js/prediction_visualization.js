@@ -1,5 +1,5 @@
 
-function render_prediction_visualization(dailyCases, dailyVaccinations) {
+function render_prediction_visualization(dailyCases) {
   var caseData ={
     x: dailyCases['date'],
     y: dailyCases['cases'],
@@ -9,17 +9,6 @@ function render_prediction_visualization(dailyCases, dailyVaccinations) {
       dash: 'solid'
     },
     name: 'daily cases'
-  };
-
-  var vaxData = {
-    x: dailyVaccinations['date'], 
-    y: dailyVaccinations['vaccinations'], 
-    type: 'scatter', 
-    mode: 'lines',
-    line: {
-      dash: 'solid'
-    },
-    name: 'daily vaccinations'
   };
 
   // fake temporary data to play around with
@@ -35,11 +24,11 @@ function render_prediction_visualization(dailyCases, dailyVaccinations) {
     name: 'predicted ???'
   };
 
-  // list of all data series/"traces" (according to plotly)
-  var data = [caseData, vaxData, futureData];
+  // list of all data series/"traces" 
+  var data = [caseData, futureData];
 
   var layout = { 
-    title: 'Daily Covid Cases vs Daily Vaccinations + Predictions'
+    title: 'Daily Covid Cases + Predictions'
   };
   
   var config = {responsive: true};
