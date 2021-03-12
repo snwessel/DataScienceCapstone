@@ -41,7 +41,7 @@ class DataLoader:
     return filtered_df[["created_at", "new_case"]]
 
 
-  def get_daily_cases_dict(state_abbrev):
+  def get_daily_cases_dict(daily_cases_df, state_abbrev):
     """Load daily case counts from the CDC API, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_daily_cases_df(state_abbrev)
     # return the new cases by date in a javascript-friendly format
@@ -68,7 +68,7 @@ class DataLoader:
     return daily_state_vax_df
 
 
-  def get_daily_vaccinations_dict(state_abbrev):
+  def get_daily_vaccinations_dict(daily_vaccinations_df, state_abbrev):
     """Load daily vaccination counts from the CDC CSV, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_daily_vaccinations_df(state_abbrev)
     # return the new vaccinations by date in a javascript-friendly format
@@ -122,6 +122,26 @@ class DataLoader:
     }
     return cases_by_date_dict
 
+
+  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=20, multiplier=1):
+    """Generate a dictionary containing the predicted number of total vaccinations per day"""
+    num_past_days = daily_total_vaccines_df.shape[0]
+    current_total_vaccines = daily_total_vaccines_df["total_vaccinations_per_million"].iloc[-1]
+    avg_per_day = current_total_vaccines / num_past_days
+    predicted_daily_totals = pd.Series([avg_per_day]).repeat(num_days)
+    predicted_daily_totals.iloc[0] += current_total_vaccines
+    predicted_daily_totals = predicted_daily_totals.cumsum()
+
+    vaccinations_by_date_dict = {
+      "date": daily_total_vaccines_df["date"].tolist(), #TODO: generate future dates here
+      "vaccinations": predicted_daily_totals.tolist()
+    }
+    return vaccinations_by_date_dict
+
+
+##########################
+## EXPLORATORY DATASETS ##
+##########################
 
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""

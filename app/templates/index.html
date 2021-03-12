@@ -33,10 +33,11 @@
       // convert the data from json to a JS object
       var dailyCases = {{ daily_cases|tojson }};
       var dailyVaccinations = {{ daily_vaccinations|tojson }};
+      var futureVaccinations = {{ future_vaccinations|tojson }}
       
       // create the visualizations
       render_prediction_visualization(dailyCases)
-      render_vaccine_visualization(dailyVaccinations)
+      render_vaccine_visualization(dailyVaccinations, futureVaccinations)
     </script>
   </section>
   <section>
