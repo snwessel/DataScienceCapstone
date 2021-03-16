@@ -9,7 +9,7 @@ function render_vaccine_visualization(dailyTotalVaccinations, assumedFutureVacci
     line: {
       dash: 'solid'
     },
-    name: 'daily vaccinations'
+    name: 'actual'
   };
 
   // fake temporary data to play around with
@@ -21,14 +21,15 @@ function render_vaccine_visualization(dailyTotalVaccinations, assumedFutureVacci
     line: {
       dash: 'dot'
     },
-    name: 'assumed future'
+    name: 'assumed'
   };
 
   // list of all data series/"traces" (according to plotly)
   var data = [vaxData, futureData];
 
   var layout = { 
-    title: 'Total Vaccinations per Million + Assumed Future Rate'
+    title: 'Total Vaccinations per Million + Assumed Future Rate',
+    paper_bgcolor: '#fafaee'
   };
   
   var config = {responsive: true};

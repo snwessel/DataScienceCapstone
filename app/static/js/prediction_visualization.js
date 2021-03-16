@@ -8,7 +8,7 @@ function render_prediction_visualization(dailyCases) {
     line: {
       dash: 'solid'
     },
-    name: 'daily cases'
+    name: 'actual'
   };
 
   // fake temporary data to play around with
@@ -21,14 +21,15 @@ function render_prediction_visualization(dailyCases) {
     line: {
       dash: 'dot'
     },
-    name: 'predicted ???'
+    name: 'predicted'
   };
 
   // list of all data series/"traces" 
   var data = [caseData, futureData];
 
   var layout = { 
-    title: 'Daily Covid Cases + Predictions'
+    title: 'Daily Covid Cases + Predictions',
+    paper_bgcolor: '#fafaee'
   };
   
   var config = {responsive: true};
