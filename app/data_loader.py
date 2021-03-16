@@ -1,4 +1,5 @@
 import csv
+from datetime import datetime, timedelta
 import requests
 import pandas as pd
 import numpy as np
@@ -125,8 +126,9 @@ class DataLoader:
     return cases_by_date_dict
 
 
-  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=20, multiplier=1):
+  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=100, multiplier=1):
     """Generate a dictionary containing the predicted number of total vaccinations per day"""
+    # use past vaccination information to make a prediction
     num_past_days = daily_total_vaccines_df.shape[0]
     current_total_vaccines = daily_total_vaccines_df["total_vaccinations_per_million"].iloc[-1]
     avg_per_day = current_total_vaccines / num_past_days
@@ -134,8 +136,17 @@ class DataLoader:
     predicted_daily_totals.iloc[0] += current_total_vaccines
     predicted_daily_totals = predicted_daily_totals.cumsum()
 
+    # get the corresponding date strings for these values
+    future_dates = [] # initialize the array
+    last_known_date = daily_total_vaccines_df["date"].iloc[-1]
+    date_i = datetime.strptime(last_known_date, '%Y-%m-%d')
+    for i in range(num_days):
+        date_i += timedelta(days=1)
+        date_str = date_i.strftime('%Y-%m-%d')
+        future_dates.append(date_str)    
+
     vaccinations_by_date_dict = {
-      "date": daily_total_vaccines_df["date"].tolist(), #TODO: generate future dates here
+      "date": future_dates, #TODO: generate future dates here
       "vaccinations": predicted_daily_totals.tolist()
     }
     return vaccinations_by_date_dict
