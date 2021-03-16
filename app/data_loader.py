@@ -9,6 +9,8 @@ from sodapy import Socrata
 
 class DataLoader:
 
+  ## Loading and Cleaning ##
+
   def get_states():
     """Load state abbreviations and names from file"""
     # states will be stored in a dict 
@@ -87,9 +89,9 @@ class DataLoader:
 
     # merge the dataframes
     merged_df = pd.merge(case_data, vax_data, left_on="created_at", right_on="date", how="left")
+    merged_df.fillna(0, inplace=True)
     # pull out only the values we need
-    cleaned_df = merged_df[["new_case", "total_vaccinations_per_million"]]
-    return cleaned_df
+    return merged_df[["new_case", "total_vaccinations_per_million"]]
 
 
   def get_national_cases_df():
@@ -138,10 +140,57 @@ class DataLoader:
     }
     return vaccinations_by_date_dict
 
+  ## Processing for Training ##  
 
-##########################
-## EXPLORATORY DATASETS ##
-##########################
+  def get_windowed_df(series, window_size):
+    """ Convert a pandas series into a windowed dataframe. 
+        Where the window size is k and the series size is n, the output should look like:
+        [[x_0, x_1, ..., x_k-1]
+         [x_1, x_2, ..., x_k],
+         ...
+         [          ..., x_n]
+         """
+    n_days = series.shape[0]
+    n_windows = (n_days - window_size) + 1
+    # initialize an array of the correct shape
+    windowed_array = np.zeros((n_windows, window_size))
+    # get the "windows" one at a time
+    for i in range(n_windows):
+        window = series[i:i+window_size]
+        windowed_array[i] = window
+    # convert to a dataframe
+    windowed_df = pd.DataFrame(windowed_array)
+    return windowed_df
+
+
+  def get_windowed_training_data(window_size):
+    """ Get X and y values to use for training and testing a windowed model
+        Where k is the window size, our outputs should look like the following:
+        Our feature set X should look like:
+        [[cases_0, cases_1, ... cases_k-2, vaccinations_k-2],
+         [cases_1, cases_2, ... cases_k-1, vaccinations_k-1],
+         [cases_2, cases_3, ... cases_k, vaccinations_k],
+         ... ]
+        Our y values should be:
+        [cases_k-1, cases_k, cases_k+1, ...] """
+    
+    # get windowed case data
+    df = DataLoader.get_case_and_vax_df()
+    X = DataLoader.get_windowed_df(df["new_case"], window_size)
+
+    # pull out the final value in each window to use as our 'y' value
+    y = X[window_size-1]
+    X.drop(window_size-1, inplace=True)
+
+    # add vaccination counts to the features
+    vaccinations = df["total_vaccinations_per_million"]
+    # we want the vaccination number to correspond to the last day of case counts in X
+    vaccine_offset = window_size - 2
+    offset_vaccinations = vaccinations[vaccine_offset:(X.shape[0]-vaccine_offset)]
+    X[window_size-1] = vaccinations
+    return X, y
+
+  ## Exploratory Datasets ##
 
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
