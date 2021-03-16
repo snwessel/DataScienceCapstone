@@ -163,7 +163,7 @@ class DataLoader:
     return windowed_df
 
 
-  def get_windowed_training_data(window_size):
+  def get_windowed_training_data(window_size, include_vaccinations=True):
     """ Get X and y values to use for training and testing a windowed model
         Where k is the window size, our outputs should look like the following:
         Our feature set X should look like:
@@ -182,12 +182,13 @@ class DataLoader:
     y = X[window_size-1]
     X.drop(window_size-1, inplace=True)
 
-    # add vaccination counts to the features
-    vaccinations = df["total_vaccinations_per_million"]
-    # we want the vaccination number to correspond to the last day of case counts in X
-    vaccine_offset = window_size - 2
-    offset_vaccinations = vaccinations[vaccine_offset:(X.shape[0]-vaccine_offset)]
-    X[window_size-1] = vaccinations
+    if include_vaccinations: 
+      # add vaccination counts to the features
+      vaccinations = df["total_vaccinations_per_million"]
+      # we want the vaccination number to correspond to the last day of case counts in X
+      vaccine_offset = window_size - 2
+      offset_vaccinations = vaccinations[vaccine_offset:(X.shape[0]-vaccine_offset)]
+      X[window_size-1] = offset_vaccinations
     return X, y
 
   ## Exploratory Datasets ##
