@@ -131,7 +131,7 @@ class DataLoader:
     # use past vaccination information to make a prediction
     num_past_days = daily_total_vaccines_df.shape[0]
     current_total_vaccines = daily_total_vaccines_df["total_vaccinations_per_million"].iloc[-1]
-    avg_per_day = current_total_vaccines / num_past_days
+    avg_per_day = (current_total_vaccines / num_past_days) * multiplier
     predicted_daily_totals = pd.Series([avg_per_day]).repeat(num_days)
     predicted_daily_totals.iloc[0] += current_total_vaccines
     predicted_daily_totals = predicted_daily_totals.cumsum()

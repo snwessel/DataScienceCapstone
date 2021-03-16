@@ -5,16 +5,39 @@
   <p class="font-italic">This is a brief description of our project...</p>
   <section>
     <h1>Predictions</h1>
-    <p>Selected State: {{ state }}</p>
+    <p>
+      Showing data for <b>{{ state }}</b> and assuming that the future 
+      vaccination rate will be <b>{{ multiplier }}x</b> the past vaccination rate.</p>
 
-    <div class="dropdown">
-      <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        Select State
-      </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        {% for state_name in states.keys() %}
-        <a class="dropdown-item" href="/state/{{ states[state_name]}}">{{ state_name }}</a>
-        {% endfor %}
+    <!-- Dropdowns-->
+    <div class="row">
+      <div class="col-auto">
+        <div class="dropdown">
+          <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Select State
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            {% for state_name in all_states.keys() %}
+            <a class="dropdown-item" href="?state={{ all_states[state_name]}}&multiplier={{multiplier}}">{{ state_name }}</a>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+      <div class="col-auto">
+        <div class="dropdown">
+          <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+            Select Future Vacination Rate
+          </button>
+          <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <a class="dropdown-item" href="?state={{state}}&multiplier=0.5">0.5x Past Rate</a>
+            <a class="dropdown-item" href="?state={{state}}&multiplier=0.75">0.75x Past Rate</a>
+            <a class="dropdown-item" href="?state={{state}}&multiplier=1">1x Past Rate</a>
+            <a class="dropdown-item" href="?state={{state}}&multiplier=1.25">1.25x Past Rate</a>
+            <a class="dropdown-item" href="?state={{state}}&multiplier=1.5">1.5x Past Rate</a>
+            <a class="dropdown-item" href="?state={{state}}&multiplier=2">2x Past Rate</a>
+          </div>
+        </div>
       </div>
     </div>
 
