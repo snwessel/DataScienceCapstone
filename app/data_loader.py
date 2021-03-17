@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 import numpy as np
 from sodapy import Socrata
-# from delphi_epidata import Epidata
+from delphi_epidata import Epidata
 
 # Utils for loading data
 
@@ -82,11 +82,11 @@ class DataLoader:
     return vaccinations_by_date_dict
 
 
-  def get_case_and_vax_df():
+  def get_case_and_vax_df(state_abbrev):
     """Get a dataframe containing the daily case counts and vaccinations"""
     # load the case and vaccination data
-    case_data = DataLoader.get_daily_cases_df("MA")
-    vax_data = DataLoader.get_daily_vaccinations_df("MA")
+    case_data = DataLoader.get_daily_cases_df(state_abbrev)
+    vax_data = DataLoader.get_daily_vaccinations_df(state_abbrev)
 
     # merge the dataframes
     merged_df = pd.merge(case_data, vax_data, left_on="created_at", right_on="date", how="left")
@@ -174,7 +174,7 @@ class DataLoader:
     return windowed_df
 
 
-  def get_windowed_training_data(window_size, include_vaccinations=True):
+  def get_windowed_training_data(window_size, state_abbrev, include_vaccinations=True):
     """ Get X and y values to use for training and testing a windowed model
         Where k is the window size, our outputs should look like the following:
         Our feature set X should look like:
@@ -186,19 +186,20 @@ class DataLoader:
         [cases_k-1, cases_k, cases_k+1, ...] """
     
     # get windowed case data
-    df = DataLoader.get_case_and_vax_df()
+    df = DataLoader.get_case_and_vax_df(state_abbrev)
     X = DataLoader.get_windowed_df(df["new_case"], window_size)
 
+    # make copy for y
+    copy_X = X.copy()
     # pull out the final value in each window to use as our 'y' value
-    y = X[window_size-1]
-    X.drop(window_size-1, inplace=True)
+    y = copy_X[window_size-1]
 
     if include_vaccinations: 
       # add vaccination counts to the features
       vaccinations = df["total_vaccinations_per_million"]
       # we want the vaccination number to correspond to the last day of case counts in X
       vaccine_offset = window_size - 2
-      offset_vaccinations = vaccinations[vaccine_offset:(X.shape[0]-vaccine_offset)]
+      offset_vaccinations = vaccinations[vaccine_offset:].reset_index(drop=True)
       X[window_size-1] = offset_vaccinations
     return X, y
 
@@ -227,7 +228,7 @@ class DataLoader:
         return "Error: " + str(e)
 
     cols = ["state_name", "state_pop", "state_abbrev"]
-    census_df = pd.DataFrame(columns=cols, data=results.json()[1:])
+    census_df = pd.DataFrame(columns=cols, data=results.json()[1:]).sort_values(by=['state_name'])
 
     return census_df
 
@@ -274,37 +275,31 @@ class DataLoader:
       "restaurant_lim": results_df["Restaurant Limits"].tolist(),
       "bar_closure": results_df["Bar Closures*"].tolist(),
       "mask_mandate": results_df["Statewide Face Mask Requirement"].tolist(),
-      "emergency_declaration": results_df["Emergency Declaration"].tolist(),
+      "emergency_declaration": results_df["Emergency Declaration"].tolist()
     }
     return policy_dict
 
   # TODO: finish implementing
   def get_influenza_counts_df():
     """Load influenza counts from the CMU Delphi API, return a pandas dataframe"""
-    # This retrieves national data, state data can be retrieved changing nat to state abbrev
-    # TODO: figure out epiweeks??? and what equals which days??? if there are days?
-    # results = Epidata.fluview(regions="nat", epiweeks=202021)
-    # Example results:
-    # {'result': 1,
-    #   'epidata': [{'release_date': '2021-03-05',
-    #     'region': 'nat',
-    #     'issue': 202108,
-    #     'epiweek': 202021,
-    #     'lag': 40,
-    #     'num_ili': 11416,
-    #     'num_patients': 1059901,
-    #     'num_providers': 2963,
-    #     'num_age_0': 900,
-    #     'num_age_1': 2221,
-    #     'num_age_2': None,
-    #     'num_age_3': 4463,
-    #     'num_age_4': 2208,
-    #     'num_age_5': 1624,
-    #     'wili': 1.00711,
-    #     'ili': 1.07708}],
-    #   'message': 'success'}
-    pass
+    # Retrieves national fluview data for each "epiweek" from 2020:
+    # TODO: could try to compare this against COVID cases, either convert COVID cases to epiweeks or vice versa
+    results = Epidata.fluview(["nat"], [Epidata.range(202001, 202053)])
+    results_df = pd.DataFrame.from_records(results["epidata"]).sort_values(by=["epiweek"])
+    results_df = results_df[["epiweek", "lag", "num_ili", "num_patients", "num_providers", "wili", "ili"]]
+    return results_df
 
-  # TODO: implement
   def get_infuenza_counts_dict():
-    pass
+    """Load influenza counts from the CMU Delphi API, return a dictionary which can be passed into JS"""
+    results_df = DataLoader.get_influenza_counts_df()
+    # return the flu data in a javascript-friendly format
+    influenza_dict = {
+      "epiweek": results_df["epiweek"].tolist(),
+      "lag": results_df["lag"].tolist(),
+      "num_ili": results_df["num_ili"].tolist(),
+      "num_patients": results_df["num_patients"].tolist(),
+      "num_providers": results_df["num_providers"].tolist(),
+      "wili": results_df["wili"].tolist(),
+      "ili": results_df["ili"].tolist()
+    }
+    return influenza_dict
