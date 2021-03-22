@@ -146,7 +146,7 @@ class DataLoader:
         future_dates.append(date_str)    
 
     vaccinations_by_date_dict = {
-      "date": future_dates, #TODO: generate future dates here
+      "date": future_dates,
       "vaccinations": predicted_daily_totals.tolist()
     }
     return vaccinations_by_date_dict
