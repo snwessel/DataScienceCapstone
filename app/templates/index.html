@@ -68,5 +68,29 @@
     <!-- TODO: make exploration graphs-->
     <!-- Potential exploration graph type https://plotly.com/javascript/splom/ -->
     <!-- Basic scatterplot https://plotly.com/javascript/line-and-scatter/-->
+    <div class="row">
+      <div class="col">
+        <div id="population_dataviz"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div id="policy_dataviz"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div id="influenza_dataviz"></div>
+      </div>
+    </div>
+    <script>
+      // convert the data from json to a JS object
+      var populations = {{ state_pop|tojson }};
+      var influenzaCounts = {{ influenza_counts|tojson }};
+      
+      // create the visualizations
+      render_population_visualization(populations)
+      render_influenza_visualization(influenzaCounts)
+    </script>
   </section>
 {% endblock %}
