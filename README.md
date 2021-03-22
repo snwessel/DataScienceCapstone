@@ -22,3 +22,10 @@ Lastly, run the app!
 ```
 python run.py
 ```
+
+## Updating Requirements
+Generate a new requirements file by running the following (with your own file path):
+```
+pip install pipreqs
+pipreqs \Users\...\DataScienceCapstone\app
+```
