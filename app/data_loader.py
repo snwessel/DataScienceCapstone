@@ -27,7 +27,7 @@ class DataLoader:
   def get_daily_cases_df(state_abbrev):
     """Load daily case counts from the CDC API, clean data, return a pandas dataframe."""
     # Query the CDC API
-    client = Socrata("data.cdc.gov", None)
+    client = Socrata("data.cdc.gov", "qt5QX390BTNWFZ6O36g3oO6Fq")
     results = client.get("9mfq-cb36", state=state_abbrev)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
 
@@ -40,7 +40,6 @@ class DataLoader:
     # get a 7 day average
     filtered_df["new_case"] = filtered_df["new_case"].rolling(window=7).mean()
     filtered_df = filtered_df.dropna()
-
     return filtered_df[["created_at", "new_case"]]
 
 
@@ -66,18 +65,18 @@ class DataLoader:
     state_vax_df = vax_df[vax_df["abbrev"] == state_abbrev]
     
     # get the daily total vaccinations per million
-    state_vax_df["total_vaccinations_per_million"] = state_vax_df["daily_vaccinations_per_million"].fillna(0).cumsum()
+    vaccinations_per_million = state_vax_df["daily_vaccinations_per_million"].fillna(0).cumsum()
+    state_vax_df.insert(0, "total_vaccinations_per_million", vaccinations_per_million)
     daily_state_vax_df = state_vax_df[["date", "location", "abbrev", "total_vaccinations_per_million"]]
     return daily_state_vax_df
 
 
   def get_daily_vaccinations_dict(daily_vaccinations_df, state_abbrev):
     """Load daily vaccination counts from the CDC CSV, return a dictionary which can be passed into JS"""
-    results_df = DataLoader.get_daily_vaccinations_df(state_abbrev)
     # return the new vaccinations by date in a javascript-friendly format
     vaccinations_by_date_dict = {
-      "date": results_df["date"].tolist(),
-      "vaccinations": results_df["total_vaccinations_per_million"].tolist()
+      "date": daily_vaccinations_df["date"].tolist(),
+      "vaccinations": daily_vaccinations_df["total_vaccinations_per_million"].tolist()
     }
     return vaccinations_by_date_dict
 
@@ -162,6 +161,7 @@ class DataLoader:
          [          ..., x_n]
          """
     n_days = series.shape[0]
+    print("\tcreating windows from", n_days, "days of data.")
     n_windows = (n_days - window_size) + 1
     # initialize an array of the correct shape
     windowed_array = np.zeros((n_windows, window_size))
@@ -174,7 +174,7 @@ class DataLoader:
     return windowed_df
 
 
-  def get_windowed_training_data(window_size, state_abbrev, include_vaccinations=True):
+  def get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations=True):
     """ Get X and y values to use for training and testing a windowed model
         Where k is the window size, our outputs should look like the following:
         Our feature set X should look like:
@@ -202,6 +202,22 @@ class DataLoader:
       offset_vaccinations = vaccinations[vaccine_offset:].reset_index(drop=True)
       X[window_size-1] = offset_vaccinations
     return X, y
+
+  def get_windowed_training_data(window_size, include_vaccinations=True):
+    """Get the combined windowed training data for all states."""
+    # TODO: save state as boolean field
+    # col_names = ["day" + str(x+1) for x in range(1, window_size)]
+    # col_names.append("vaccinations_per_million")
+    states = DataLoader.get_states()
+    X = pd.DataFrame()
+    y = pd.Series()
+    for state_name, state_abbrev in states.items():
+      print("Getting data for", state_name)
+      state_X, state_y = DataLoader.get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations)
+      X = X.append(state_X)
+      y = y.append(state_y)
+    return X, y
+
 
   ## Exploratory Datasets ##
 

@@ -5,9 +5,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 
 
-def train_test_linear_regression(state_abbrev):
+def train_test_linear_regression():
   window_size = 7
-  X, y = data_loader.DataLoader.get_windowed_training_data(window_size, state_abbrev)
+  X, y = data_loader.DataLoader.get_windowed_training_data(window_size)
 
   X_arr = X.to_numpy().astype(int)
   y_arr = np.array(y).astype(int)
@@ -45,4 +45,4 @@ def train_test_linear_regression(state_abbrev):
   #                 r2_score(y_test, y_test_pred)))
 
 
-train_test_linear_regression("MA")
+train_test_linear_regression()

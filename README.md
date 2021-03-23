@@ -29,3 +29,6 @@ Generate a new requirements file by running the following (with your own file pa
 pip install pipreqs
 pipreqs \Users\...\DataScienceCapstone\app
 ```
+
+## Things we need to look into
+Why South Carolina doesn't have any data from the CDC (temporarily removed from our list of states as a fix)
