@@ -18,6 +18,10 @@ def index():
   future_vaccinations = data_loader.DataLoader.get_assumed_vaccinations_dict(daily_vaccinations_df, multiplier=multiplier)
   state_population_dict = data_loader.DataLoader.get_state_population_counts_dict()
   influenza_dict = data_loader.DataLoader.get_infuenza_counts_dict()
+
+  # get predictions
+  predictions = data_loader.DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, 7, 30)
+  
   return render_template('index.html', 
                           state=state, 
                           multiplier=multiplier,
@@ -26,5 +30,6 @@ def index():
                           daily_vaccinations=daily_vaccinations_dict,
                           future_vaccinations=future_vaccinations,
                           state_pop=state_population_dict,
-                          influenza_counts=influenza_dict)
+                          influenza_counts=influenza_dict,
+                          predictions=predictions)
 

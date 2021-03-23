@@ -1,10 +1,11 @@
 import csv
-from datetime import datetime, timedelta
-import requests
-import pandas as pd
-import numpy as np
-from sodapy import Socrata
 from delphi_epidata import Epidata
+from datetime import datetime, timedelta
+import numpy as np
+import pandas as pd
+import pickle
+import requests
+from sodapy import Socrata
 
 # Utils for loading data
 
@@ -81,14 +82,10 @@ class DataLoader:
     return vaccinations_by_date_dict
 
 
-  def get_case_and_vax_df(state_abbrev):
+  def get_case_and_vax_df(case_df, vax_df):
     """Get a dataframe containing the daily case counts and vaccinations"""
-    # load the case and vaccination data
-    case_data = DataLoader.get_daily_cases_df(state_abbrev)
-    vax_data = DataLoader.get_daily_vaccinations_df(state_abbrev)
-
     # merge the dataframes
-    merged_df = pd.merge(case_data, vax_data, left_on="created_at", right_on="date", how="left")
+    merged_df = pd.merge(case_df, vax_df, left_on="created_at", right_on="date", how="left")
     merged_df.fillna(0, inplace=True)
     # pull out only the values we need
     return merged_df[["new_case", "total_vaccinations_per_million"]]
@@ -124,6 +121,16 @@ class DataLoader:
     }
     return cases_by_date_dict
 
+  def get_future_dates_list(last_date_str, num_days):
+    future_dates = [] # initialize the array
+    date_i = datetime.strptime(last_date_str, '%Y-%m-%d')
+    for i in range(num_days):
+        date_i += timedelta(days=1)
+        date_str = date_i.strftime('%Y-%m-%d')
+        future_dates.append(date_str) 
+    return future_dates
+
+
 
   def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=100, multiplier=1):
     """Generate a dictionary containing the predicted number of total vaccinations per day"""
@@ -136,13 +143,8 @@ class DataLoader:
     predicted_daily_totals = predicted_daily_totals.cumsum()
 
     # get the corresponding date strings for these values
-    future_dates = [] # initialize the array
     last_known_date = daily_total_vaccines_df["date"].iloc[-1]
-    date_i = datetime.strptime(last_known_date, '%Y-%m-%d')
-    for i in range(num_days):
-        date_i += timedelta(days=1)
-        date_str = date_i.strftime('%Y-%m-%d')
-        future_dates.append(date_str)    
+    future_dates = DataLoader.get_future_dates_list(last_known_date, num_days)
 
     vaccinations_by_date_dict = {
       "date": future_dates,
@@ -184,9 +186,13 @@ class DataLoader:
          ... ]
         Our y values should be:
         [cases_k-1, cases_k, cases_k+1, ...] """
+
+    # load the case and vaccination data
+    case_data = DataLoader.get_daily_cases_df(state_abbrev)
+    vax_data = DataLoader.get_daily_vaccinations_df(state_abbrev)
     
     # get windowed case data
-    df = DataLoader.get_case_and_vax_df(state_abbrev)
+    df = DataLoader.get_case_and_vax_df(case_data, vax_data)
     X = DataLoader.get_windowed_df(df["new_case"], window_size)
 
     # make copy for y
@@ -218,8 +224,42 @@ class DataLoader:
       y = y.append(state_y)
     return X, y
 
+  ## Using the Trained Model ## 
+
+  def get_predictions(case_df, vax_df, window_size, num_days):
+    """Use the trained model to iteratively get predictions for future days."""
+    # load the model
+    model_bytes = pickle.load(open("data/trained_model.p", "rb"))
+    model = pickle.loads(model_bytes)
+    # assemble the set of features we'll feed in
+    recent_cases = case_df["new_case"].tail(window_size-1).to_numpy().astype(int)
+    current_vaccinations = vax_df["total_vaccinations_per_million"].iloc[-1]
+    features = np.append(recent_cases, current_vaccinations)
+    feature_matrix = np.atleast_2d(features)
+    
+    # iteratively get the predictions
+    predictions = []
+    for i in range(num_days):
+      # get the prediction
+      predicted = model.predict(feature_matrix).astype(int).item(0)
+      predictions.append(predicted)
+      # update the features
+      past_cases = features[1:window_size-1]
+      features = np.append(past_cases, [predicted, current_vaccinations])
+      feature_matrix = np.atleast_2d(features)
+
+    # convert to a dictionary 
+    last_known_date = vax_df["date"].iloc[-1]
+    future_dates = DataLoader.get_future_dates_list(last_known_date, num_days)
+    predictions_dict = {
+      "date": future_dates,
+      "predictions": predictions
+    }
+    return predictions_dict
+
 
   ## Exploratory Datasets ##
+  
 
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
