@@ -226,7 +226,7 @@ class DataLoader:
 
   ## Using the Trained Model ## 
 
-  def get_predictions(case_df, vax_df, window_size, num_days):
+  def get_predictions(case_df, vax_df, future_vaccinations_list, window_size, num_days):
     """Use the trained model to iteratively get predictions for future days."""
     # load the model
     model_bytes = pickle.load(open("data/trained_model.p", "rb"))
@@ -245,7 +245,8 @@ class DataLoader:
       predictions.append(predicted)
       # update the features
       past_cases = features[1:window_size-1]
-      features = np.append(past_cases, [predicted, current_vaccinations])
+      total_vaccinations = future_vaccinations_list[i]
+      features = np.append(past_cases, [predicted, total_vaccinations])
       feature_matrix = np.atleast_2d(features)
 
     # convert to a dictionary 
@@ -259,7 +260,7 @@ class DataLoader:
 
 
   ## Exploratory Datasets ##
-  
+
 
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
