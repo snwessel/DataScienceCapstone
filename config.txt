@@ -1,0 +1,2 @@
+[main]
+production_window_size = 24

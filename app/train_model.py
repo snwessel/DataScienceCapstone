@@ -1,3 +1,4 @@
+import configparser
 import data_loader
 import numpy as np
 import pickle
@@ -49,8 +50,11 @@ def display_metrics(trained_model, train_test_data, model_name="", show_plot=Fal
     plt.ylabel('residuals (y_test - y_test_pred)')
     plt.show()
 
+def save_trained_model(model):
+  s = pickle.dumps(model)
+  pickle.dump(s, open("data/trained_model.p", "wb"))
 
-def train_test_linear_regression(train_test_data, show_plot=False):
+def train_test_linear_regression(train_test_data, show_plot=False, save_model=False):
   # Commented out, was doing this to compare different methods of cross validation
   # # can use cross_validate instead of cross_val_score to evaluate more metrics than just R^2
   # scoring = ["r2", "neg_mean_squared_error", "neg_root_mean_squared_error"]
@@ -93,14 +97,15 @@ def train_test_linear_regression(train_test_data, show_plot=False):
     normalize=best_params["normalize"]).fit(train_test_data.X_train, train_test_data.y_train)
 
   # save the model
-  s = pickle.dumps(lin_reg)
-  pickle.dump(s, open("data/trained_model.p", "wb"))
+  if save_model:
+    print("Saving linear regression model")
+    save_trained_model(lin_reg)
 
   # Print out performance metrics
   display_metrics(lin_reg, train_test_data, model_name="Linear Regression", show_plot=show_plot)
   
 
-def train_test_ridge_regression(train_test_data, show_plot=False):
+def train_test_ridge_regression(train_test_data, show_plot=False, save_model=False):
 
   # Current params to tune: {'alpha': 1.0, 'copy_X': True, 'fit_intercept': True, 'max_iter': None, 'normalize': False, 'random_state': None, 'solver': 'auto', 'tol': 0.001}
   param_grid = {
@@ -120,14 +125,15 @@ def train_test_ridge_regression(train_test_data, show_plot=False):
     solver=best_params["solver"]
     ).fit(train_test_data.X_train, train_test_data.y_train)
 
+  # save the model
+  if save_model:
+    save_trained_model(ridge_reg)
+
   # Print out performance metrics
   display_metrics(ridge_reg, train_test_data, model_name="Ridge Regression", show_plot=show_plot)
 
 
-# NOTE: getting this warning running lasso
-#  ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations.
-#@ignore_warnings(category=ConvergenceWarning)
-def train_test_lasso(train_test_data, show_plot=False):
+def train_test_lasso(train_test_data, show_plot=False, save_model=False):
   
   # Current params to tune: {'alpha': 1.0, 'copy_X': True, 'fit_intercept': True, 'max_iter': 1000, 'normalize': False, 'positive': False, 'precompute': False, 'random_state': None, 'selection': 'cyclic', 'tol': 0.0001, 'warm_start': False}
   param_grid = {
@@ -146,6 +152,10 @@ def train_test_lasso(train_test_data, show_plot=False):
     tol=best_params["tol"]
     ).fit(train_test_data.X_train, train_test_data.y_train)
 
+  # save the model
+  if save_model:
+    save_trained_model(lasso_reg)
+
   # Print out performance metrics
   display_metrics(lasso_reg, train_test_data, model_name="Lasso Regression", show_plot=show_plot)
 
@@ -163,11 +173,19 @@ def train_test_control(windowed_data):
 ### Performance Analysis ###
 display_graphs = False
 window_sizes = [8, 12, 16, 24, 32]
+
+# get configured window size (so we know which one to save)
+config = configparser.RawConfigParser()
+config.read('config.txt')
+production_window_size = config.get('main', 'production_window_size')
+
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")
   windowed_data = TrainTestData(window_size)
 
-  train_test_linear_regression(windowed_data, display_graphs)
+  save_lin_reg = (window_size == 24) # save lin reg model when window=24
+
+  train_test_linear_regression(windowed_data, display_graphs, save_model=save_lin_reg)
   train_test_ridge_regression(windowed_data, display_graphs)
   train_test_lasso(windowed_data, display_graphs)
   train_test_control(windowed_data)

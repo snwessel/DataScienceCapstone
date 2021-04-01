@@ -3,6 +3,9 @@ from flask import render_template, request
 
 @app.route("/")
 def index():
+  # get configs 
+  window_size = app.config['WINDOW_SIZE'] # default to 7 if not found
+
   args = request.args.to_dict()
   state = args.get("state", "MA") # temporarily defaulting to MA since vaccinations aren't loading for the US yet
   multiplier = float(args.get("multiplier", "1"))
@@ -22,7 +25,7 @@ def index():
   state_population_dict = data_loader.DataLoader.get_state_population_counts_dict()
   influenza_dict = data_loader.DataLoader.get_infuenza_counts_dict()
   # get predictions
-  predictions = data_loader.DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, future_vaccinations["vaccinations"], 7, 30)
+  predictions = data_loader.DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, future_vaccinations["vaccinations"], window_size, 30)
   
   # render the HTML template
   return render_template('index.html', 
