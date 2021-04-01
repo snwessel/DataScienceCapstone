@@ -85,14 +85,6 @@ def train_test_linear_regression(n_windows):
   plt.ylabel('residuals (y_test - y_test_pred)')
   plt.show()
   
-  # # compare to a model which just assumes that the next day will be the same as the last
-  # print("Dumb Model Performance:")
-  # y_train_pred = X_train[:, window_size-2]
-  # y_test_pred = X_test[:, window_size-2]
-  # print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
-  #                 mean_squared_error(y_test, y_test_pred)))
-  # print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
-  #                 r2_score(y_test, y_test_pred)))
 
 def train_test_ridge_regression(n_windows):
   X_train, X_test, y_train, y_test = prep_train_test(n_windows)
@@ -173,6 +165,21 @@ def train_test_lasso(n_windows):
   plt.ylabel('residuals (y_test - y_test_pred)')
   plt.show()
 
+
+def train_test_control():
+  """Test the performance of a model which assumes tomorrow's cases will be the same as today's."""
+  window_size = 5 # window size doesn't really affect the performance here 
+  X_train, X_test, y_train, y_test = prep_train_test(window_size) 
+  
+  print("Control Performance:")
+  y_train_pred = X_train[:, window_size-2]
+  y_test_pred = X_test[:, window_size-2]
+  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
+                  mean_squared_error(y_test, y_test_pred)))
+  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
+                  r2_score(y_test, y_test_pred)))
+
+
 ### Performance Analysis ###
 # train_test_linear_regression(5)
 # train_test_ridge_regression(5)
@@ -181,3 +188,5 @@ def train_test_lasso(n_windows):
 # train_test_linear_regression(7)
 # train_test_ridge_regression(7)
 # train_test_lasso(7)
+
+#train_test_control()
