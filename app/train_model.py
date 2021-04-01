@@ -5,23 +5,52 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split, TimeSeriesSplit, KFold, cross_validate, GridSearchCV
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.exceptions import ConvergenceWarning
 
-def prep_train_test(n_windows):
-  window_size = n_windows
-  # get windowed data (for all states)
-  X, y = data_loader.DataLoader.get_windowed_training_data(window_size)
+# hide annoying sklearn warnings
+import warnings
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
-  X_arr = X.to_numpy().astype(int)
-  y_arr = np.array(y).astype(int)
+class TrainTestData:
+  def __init__(self, window_size):
+    self.X_train, self.X_test, self.y_train, self.y_test = self.prep_train_test(window_size)
 
-  # Keep in mind: for future, maybe only include days with vaccine info?
-  X_train, X_test, y_train, y_test = train_test_split(X_arr, y_arr, test_size=0.33)  # default test_size: 0.25
+  def prep_train_test(self, window_size):
+    # get windowed data (for all states)
+    X, y = data_loader.DataLoader.get_windowed_training_data(window_size)
 
-  return X_train, X_test, y_train, y_test
+    X_arr = X.to_numpy().astype(int)
+    y_arr = np.array(y).astype(int)
 
-def train_test_linear_regression(n_windows):
-  X_train, X_test, y_train, y_test = prep_train_test(n_windows)
+    # Keep in mind: for future, maybe only include days with vaccine info?
+    X_train, X_test, y_train, y_test = train_test_split(X_arr, y_arr, test_size=0.33)  # default test_size: 0.25
 
+    return X_train, X_test, y_train, y_test
+
+
+def display_metrics(trained_model, train_test_data, model_name="", show_plot=False):
+  print(model_name, "performance:")
+  y_train_pred = trained_model.predict(train_test_data.X_train)
+  y_test_pred = trained_model.predict(train_test_data.X_test)
+
+  # Mean Squared Error
+  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(train_test_data.y_train, y_train_pred),
+                  mean_squared_error(train_test_data.y_test, y_test_pred)))
+  # R-Squared
+  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(train_test_data.y_train, y_train_pred),
+                  r2_score(train_test_data.y_test, y_test_pred)))
+
+  # Checking if linear regression was the best idea (plotting residuals)
+  if show_plot:
+    residuals = (train_test_data.y_test - y_test_pred)
+    plt.scatter(y_test_pred, residuals)
+    plt.title(model_name + 'Residuals plot to assess heteroscedasticity')
+    plt.xlabel('y_test_pred')
+    plt.ylabel('residuals (y_test - y_test_pred)')
+    plt.show()
+
+
+def train_test_linear_regression(train_test_data, show_plot=False):
   # Commented out, was doing this to compare different methods of cross validation
   # # can use cross_validate instead of cross_val_score to evaluate more metrics than just R^2
   # scoring = ["r2", "neg_mean_squared_error", "neg_root_mean_squared_error"]
@@ -52,42 +81,26 @@ def train_test_linear_regression(n_windows):
 
   # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
   grid = GridSearchCV(LinearRegression(), param_grid, cv=TimeSeriesSplit())
-  search_results = grid.fit(X_train, y_train)
+  search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
   best_params = search_results.best_params_
 
   # Train model with the best parameters
   # NOTE: one example had it with fit_int = False and norm = True, but if fit_int is False the norm value is ignored according to sklearn
       # param_grid can be updated to maybe exclude fit_int = False then?
-  lin_reg = LinearRegression(copy_X=best_params["copy_X"], fit_intercept=best_params["fit_intercept"], normalize=best_params["normalize"]).fit(X_train, y_train)
+  lin_reg = LinearRegression(
+    copy_X=best_params["copy_X"], 
+    fit_intercept=best_params["fit_intercept"], 
+    normalize=best_params["normalize"]).fit(train_test_data.X_train, train_test_data.y_train)
 
   # save the model
   s = pickle.dumps(lin_reg)
   pickle.dump(s, open("data/trained_model.p", "wb"))
 
   # Print out performance metrics
-  print("Linear regression performance:")
-  y_train_pred = lin_reg.predict(X_train)
-  y_test_pred = lin_reg.predict(X_test)
-  # Mean Squared Error
-  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
-                  mean_squared_error(y_test, y_test_pred)))
-  # R-Squared
-  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
-                  r2_score(y_test, y_test_pred)))
-
-  # Checking if linear regression was the best idea (plotting residuals)
-  residuals = (y_test - y_test_pred)
-  print("residuals")
-  print(residuals)
-  plt.scatter(y_test_pred, residuals)
-  plt.title('OLS Residuals plot to assess heteroscedasticity')
-  plt.xlabel('y_test_pred')
-  plt.ylabel('residuals (y_test - y_test_pred)')
-  plt.show()
+  display_metrics(lin_reg, train_test_data, model_name="Linear Regression", show_plot=show_plot)
   
 
-def train_test_ridge_regression(n_windows):
-  X_train, X_test, y_train, y_test = prep_train_test(n_windows)
+def train_test_ridge_regression(train_test_data, show_plot=False):
 
   # Current params to tune: {'alpha': 1.0, 'copy_X': True, 'fit_intercept': True, 'max_iter': None, 'normalize': False, 'random_state': None, 'solver': 'auto', 'tol': 0.001}
   param_grid = {
@@ -97,38 +110,24 @@ def train_test_ridge_regression(n_windows):
 
   # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
   grid = GridSearchCV(Ridge(), param_grid, cv=TimeSeriesSplit())
-  search_results = grid.fit(X_train, y_train)
+  search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
   best_params = search_results.best_params_
 
   # Train model with the best parameters
   # NOTE: just doing alpha for now, and going with the rest of the defaults and ones chosen? ran into issues trying to tune solver...
-  ridge_reg = Ridge(alpha=best_params["alpha"], solver=best_params["solver"]).fit(X_train, y_train)
+  ridge_reg = Ridge(
+    alpha=best_params["alpha"], 
+    solver=best_params["solver"]
+    ).fit(train_test_data.X_train, train_test_data.y_train)
 
   # Print out performance metrics
-  print("Ridge regression performance:")
-  y_train_pred = ridge_reg.predict(X_train)
-  y_test_pred = ridge_reg.predict(X_test)
-  # Mean Squared Error
-  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
-                  mean_squared_error(y_test, y_test_pred)))
-  # R-Squared
-  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
-                  r2_score(y_test, y_test_pred)))
+  display_metrics(ridge_reg, train_test_data, model_name="Ridge Regression", show_plot=show_plot)
 
-  # Checking if ridge regression was the best idea (plotting residuals)
-  residuals = (y_test - y_test_pred)
-  print("residuals")
-  print(residuals)
-  plt.scatter(y_test_pred, residuals)
-  plt.title('Ridge Residuals plot to assess heteroscedasticity')
-  plt.xlabel('y_test_pred')
-  plt.ylabel('residuals (y_test - y_test_pred)')
-  plt.show()
 
 # NOTE: getting this warning running lasso
 #  ConvergenceWarning: Objective did not converge. You might want to increase the number of iterations.
-def train_test_lasso(n_windows):
-  X_train, X_test, y_train, y_test = prep_train_test(n_windows)
+#@ignore_warnings(category=ConvergenceWarning)
+def train_test_lasso(train_test_data, show_plot=False):
   
   # Current params to tune: {'alpha': 1.0, 'copy_X': True, 'fit_intercept': True, 'max_iter': 1000, 'normalize': False, 'positive': False, 'precompute': False, 'random_state': None, 'selection': 'cyclic', 'tol': 0.0001, 'warm_start': False}
   param_grid = {
@@ -138,55 +137,37 @@ def train_test_lasso(n_windows):
 
   # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
   grid = GridSearchCV(Lasso(), param_grid, cv=TimeSeriesSplit())
-  search_results = grid.fit(X_train, y_train)
+  search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
   best_params = search_results.best_params_
 
   # Train model with the best parameters
-  lasso_reg = Lasso(alpha=best_params["alpha"], tol=best_params["tol"]).fit(X_train, y_train)
+  lasso_reg = Lasso(
+    alpha=best_params["alpha"], 
+    tol=best_params["tol"]
+    ).fit(train_test_data.X_train, train_test_data.y_train)
 
   # Print out performance metrics
-  print("Lasso regression performance:")
-  y_train_pred = lasso_reg.predict(X_train)
-  y_test_pred = lasso_reg.predict(X_test)
-  # Mean Squared Error
-  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
-                  mean_squared_error(y_test, y_test_pred)))
-  # R-Squared
-  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
-                  r2_score(y_test, y_test_pred)))
-
-  # Checking if ridge regression was the best idea (plotting residuals)
-  residuals = (y_test - y_test_pred)
-  print("residuals")
-  print(residuals)
-  plt.scatter(y_test_pred, residuals)
-  plt.title('Lasso Residuals plot to assess heteroscedasticity')
-  plt.xlabel('y_test_pred')
-  plt.ylabel('residuals (y_test - y_test_pred)')
-  plt.show()
+  display_metrics(lasso_reg, train_test_data, model_name="Lasso Regression", show_plot=show_plot)
 
 
-def train_test_control():
-  """Test the performance of a model which assumes tomorrow's cases will be the same as today's."""
-  window_size = 5 # window size doesn't really affect the performance here 
-  X_train, X_test, y_train, y_test = prep_train_test(window_size) 
-  
+def train_test_control(windowed_data):
   print("Control Performance:")
-  y_train_pred = X_train[:, window_size-2]
-  y_test_pred = X_test[:, window_size-2]
-  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(y_train, y_train_pred),
-                  mean_squared_error(y_test, y_test_pred)))
-  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(y_train, y_train_pred),
-                  r2_score(y_test, y_test_pred)))
+  y_train_pred = windowed_data.X_train[:, window_size-2]
+  y_test_pred = windowed_data.X_test[:, window_size-2]
+  print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(windowed_data.y_train, y_train_pred),
+                  mean_squared_error(windowed_data.y_test, y_test_pred)))
+  print('\tR^2 train: %.3f, test: %.3f' % (r2_score(windowed_data.y_train, y_train_pred),
+                  r2_score(windowed_data.y_test, y_test_pred)))
 
 
 ### Performance Analysis ###
-# train_test_linear_regression(5)
-# train_test_ridge_regression(5)
-# train_test_lasso(5)
+display_graphs = False
+window_sizes = [8, 12, 16, 24, 32]
+for window_size in window_sizes:
+  print("\nEvaluating models on window_size", window_size, "\n----------")
+  windowed_data = TrainTestData(window_size)
 
-# train_test_linear_regression(7)
-# train_test_ridge_regression(7)
-# train_test_lasso(7)
-
-#train_test_control()
+  train_test_linear_regression(windowed_data, display_graphs)
+  train_test_ridge_regression(windowed_data, display_graphs)
+  train_test_lasso(windowed_data, display_graphs)
+  train_test_control(windowed_data)
