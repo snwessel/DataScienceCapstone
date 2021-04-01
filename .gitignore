@@ -2,7 +2,7 @@
 __pycache__/
 env/
 dscapstone/
-__init__.pyc
+*.pyc
 
 # Flask stuff:
 instance/
