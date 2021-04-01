@@ -1,5 +1,7 @@
-import configparser
-import data_loader
+from app import app, data_loader
+
+app.config.from_pyfile('config.py')
+
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
@@ -175,9 +177,7 @@ display_graphs = False
 window_sizes = [8, 12, 16, 24, 32]
 
 # get configured window size (so we know which one to save)
-config = configparser.RawConfigParser()
-config.read('config.txt')
-production_window_size = config.get('main', 'production_window_size')
+window_size = app.config['WINDOW_SIZE']
 
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")
