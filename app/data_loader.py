@@ -163,7 +163,7 @@ class DataLoader:
          [          ..., x_n]
          """
     n_days = series.shape[0]
-    print("\tcreating windows from", n_days, "days of data.")
+    # print("\tcreating windows from", n_days, "days of data.")
     n_windows = (n_days - window_size) + 1
     # initialize an array of the correct shape
     windowed_array = np.zeros((n_windows, window_size))
@@ -176,7 +176,7 @@ class DataLoader:
     return windowed_df
 
 
-  def get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations=True):
+  def get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations=True, holdout_days=0):
     """ Get X and y values to use for training and testing a windowed model
         Where k is the window size, our outputs should look like the following:
         Our feature set X should look like:
@@ -185,7 +185,9 @@ class DataLoader:
          [cases_2, cases_3, ... cases_k, vaccinations_k],
          ... ]
         Our y values should be:
-        [cases_k-1, cases_k, cases_k+1, ...] """
+        [cases_k-1, cases_k, cases_k+1, ...] 
+        Note: The holdout_days arg specifies the number of most-recent days which should be excluded
+              from training data (to use later in testing multi-day predictions)."""
 
     # load the case and vaccination data
     case_data = DataLoader.get_daily_cases_df(state_abbrev)
@@ -193,6 +195,8 @@ class DataLoader:
     
     # get windowed case data
     df = DataLoader.get_case_and_vax_df(case_data, vax_data)
+    if holdout_days > 0:
+      df = df[:-holdout_days]
     X = DataLoader.get_windowed_df(df["new_case"], window_size)
 
     # make copy for y
@@ -209,7 +213,7 @@ class DataLoader:
       X[window_size-1] = offset_vaccinations
     return X, y
 
-  def get_windowed_training_data(window_size, include_vaccinations=True):
+  def get_windowed_training_data(window_size, include_vaccinations=True, holdout_days=0):
     """Get the combined windowed training data for all states."""
     # TODO: save state as boolean field
     # col_names = ["day" + str(x+1) for x in range(1, window_size)]
@@ -218,10 +222,21 @@ class DataLoader:
     X = pd.DataFrame()
     y = pd.Series()
     for state_name, state_abbrev in states.items():
-      print("Getting data for", state_name)
-      state_X, state_y = DataLoader.get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations)
+      # print("Getting data for", state_name)
+      state_X, state_y = DataLoader.get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations, holdout_days)
       X = X.append(state_X)
       y = y.append(state_y)
+    return X, y
+
+  def get_date_separated_testing_data(num_test_days, state_abbrev):
+    """Generate an X and y value for each state"""
+    # load the case and vaccination data
+    case_data = DataLoader.get_daily_cases_df(state_abbrev)
+    vax_data = DataLoader.get_daily_vaccinations_df(state_abbrev)
+    df = DataLoader.get_case_and_vax_df(case_data, vax_data)
+    # generate X and y
+    X = df[:-num_test_days] # all but last n elements
+    y = df[-num_test_days:] # last n elements
     return X, y
 
   ## Using the Trained Model ## 
