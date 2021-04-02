@@ -1,6 +1,6 @@
 from app import app, data_loader
 
-app.config.from_pyfile('config.py')
+app.config.from_pyfile('custom_configs.py')
 
 import numpy as np
 import pickle
