@@ -1,18 +1,151 @@
+import pickle
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split, TimeSeriesSplit, KFold, cross_validate, GridSearchCV
+from sklearn import linear_model
+from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.exceptions import ConvergenceWarning
 import torch
 import torch.nn as nn
 from torch.autograd import Variable 
 
-# An interface for interacting with machine learning models
-class MLModel:
-  def fit(self, daily_cases, daily_vaccinations):
-    """Train the model to fit the data"""
+
+def save_trained_model(model):
+  s = pickle.dumps(model)
+  pickle.dump(s, open("data/trained_model.p", "wb"))
+
+# an abstract class which has functions that are helpful for all of the regression models
+class RegressionModel():
+  """An interface for the regression models."""
+  def __init__(self):
+    self.model = None
+    self.model_name = ""
+
+  def get_best_params(self, train_test_data):
+    """Perform cross validation to get the best parameters."""
     pass
 
-  def predict(self, num_days):
-    """Predict the given number of days"""
-    # We may need to pass in the state data too
-    pass 
+  def train(self, X_train, y_train, save_model=False):
+    pass
 
+  def predict(self, x):
+    return self.model.predict(x)
+
+  def display_metrics(self, train_test_data, show_plot=False):
+    print(self.model_name, "performance:")
+    y_train_pred = self.model.predict(train_test_data.X_train)
+    y_test_pred = self.model.predict(train_test_data.X_test)
+
+    # Mean Squared Error
+    print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(train_test_data.y_train, y_train_pred),
+                    mean_squared_error(train_test_data.y_test, y_test_pred)))
+    # R-Squared
+    print('\tR^2 train: %.3f, test: %.3f' % (r2_score(train_test_data.y_train, y_train_pred),
+                    r2_score(train_test_data.y_test, y_test_pred)))
+
+    # Checking if linear regression was the best idea (plotting residuals)
+    if show_plot:
+      residuals = (train_test_data.y_test - y_test_pred)
+      plt.scatter(y_test_pred, residuals)
+      plt.title(self.model_name + 'Residuals plot to assess heteroscedasticity')
+      plt.xlabel('y_test_pred')
+      plt.ylabel('residuals (y_test - y_test_pred)')
+      plt.show()
+
+
+class LinearRegression(RegressionModel):
+  def __init__(self):
+    """Initialize the hyperparameters to what we have found to perform the best in the past."""
+    self.best_params = {'copy_X': True, 'fit_intercept': True, 'n_jobs': None, 'normalize': False}
+    self.model = None
+    self.model_name = "Linear Regression"
+
+  def get_best_params(self, train_test_data):
+    """Perform cross validation to get the best parameters."""
+    # Current params to tune: {'copy_X': True, 'fit_intercept': True, 'n_jobs': None, 'normalize': False}
+    param_grid = {'fit_intercept':[True, False], 'normalize':[True, False], 'copy_X':[True, False]}
+    # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
+    grid = GridSearchCV(linear_model.LinearRegression(), param_grid, cv=TimeSeriesSplit())
+    search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
+    self.best_params = search_results.best_params_
+    return self.best_params
+
+  def train(self, X_train, y_train, save_model=False):
+    self.model = linear_model.LinearRegression(
+      copy_X=self.best_params["copy_X"], 
+      fit_intercept=self.best_params["fit_intercept"], 
+      normalize=self.best_params["normalize"]).fit(X_train, y_train)
+    if save_model:
+      print("Saving linear regression model")
+      save_trained_model(self.model)
+
+class RidgeRegression(RegressionModel):
+  def __init__(self):
+    """Initialize the hyperparameters to what we have found to perform the best in the past."""
+    self.best_params = {
+      'alpha': 1.0, 
+      'solver': 'auto'
+    }
+    self.model = None
+    self.model_name = "Ridge Regression"
+
+  def get_best_params(self, train_test_data):
+    """Perform cross validation to get the best parameters."""
+    param_grid = {
+      'alpha': [ 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 7.0, 10.0],
+      'solver': ['auto', 'svd', 'cholesky', 'lsqr', 'sparse_cg', 'sag', 'saga']
+      }
+    # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
+    grid = GridSearchCV(linear_model.Ridge(), param_grid, cv=TimeSeriesSplit())
+    search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
+    self.best_params = search_results.best_params_
+    return self.best_params
+  
+  def train(self, X_train, y_train, save_model=False):
+    # Train model with the best parameters
+    # NOTE: just doing alpha for now, and going with the rest of the defaults and ones chosen? ran into issues trying to tune solver...
+    self.model = linear_model.Ridge(
+      alpha=self.best_params["alpha"], 
+      solver=self.best_params["solver"]
+      ).fit(X_train, y_train)
+    if save_model:
+      print("Saving ridge regression model")
+      save_trained_model(self.model)
+
+class LassoRegression(RegressionModel):
+  def __init__(self):
+    """Initialize the hyperparameters to what we have found to perform the best in the past."""
+    self.best_params = {'alpha': 1.0, 'tol': 0.0001}
+    self.model = None
+    self.model_name = "Lasso Regression"
+
+  def get_best_params(self, train_test_data):
+    """Perform cross validation to get the best parameters."""
+    param_grid = {
+      'alpha': [ 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 7.0, 10.0], 
+      'tol': [0.0001, 0.001, 0.01, 0.1]
+      }
+
+    # CV can be an int for number of folds (KFold) but can also be a CV-Splitter (like TimeSeriesSplit)
+    grid = GridSearchCV(linear_model.Lasso(), param_grid, cv=TimeSeriesSplit())
+    search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
+    self.best_params = search_results.best_params_
+    return self.best_params
+  
+  def train(self, X_train, y_train, save_model=False):
+    # Train model with the best parameters
+    # NOTE: just doing alpha for now, and going with the rest of the defaults and ones chosen? ran into issues trying to tune solver...
+    self.model = linear_model.Lasso(
+      alpha=self.best_params["alpha"], 
+      tol=self.best_params["tol"]
+      ).fit(X_train, y_train)
+    if save_model:
+      print("Saving lasso regression model")
+      save_trained_model(self.model)
+
+
+
+
+# Note: The LSTM is not working yet
 class LSTM(nn.Module):
   def __init__(self):
     self.input_dim = 2
