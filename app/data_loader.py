@@ -257,6 +257,7 @@ class DataLoader:
     for i in range(num_days):
       # get the prediction
       predicted = model.predict(feature_matrix).astype(int).item(0)
+      predicted = max(0, predicted)
       predictions.append(predicted)
       # update the features
       past_cases = features[1:window_size-1]
