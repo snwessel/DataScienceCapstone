@@ -1,6 +1,6 @@
-from app import app, data_loader
+import data_loader
 
-app.config.from_pyfile('custom_configs.py')
+# app.config.from_pyfile('custom_configs.py')
 
 import numpy as np
 import pickle
@@ -177,7 +177,7 @@ display_graphs = False
 window_sizes = [8, 12, 16, 24, 32]
 
 # get configured window size (so we know which one to save)
-window_size = app.config['WINDOW_SIZE']
+window_size = 24 #app.config['WINDOW_SIZE']
 
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")

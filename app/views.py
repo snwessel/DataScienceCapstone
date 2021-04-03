@@ -4,7 +4,7 @@ from flask import render_template, request
 @app.route("/")
 def index():
   # get configs 
-  window_size = app.config['WINDOW_SIZE'] # default to 7 if not found
+  window_size = app.config.get('WINDOW_SIZE', 24) # TODO: debug why the config doesn't exist on our deployment
 
   args = request.args.to_dict()
   state = args.get("state", "MA") # temporarily defaulting to MA since vaccinations aren't loading for the US yet
