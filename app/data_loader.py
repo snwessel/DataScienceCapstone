@@ -61,6 +61,7 @@ class DataLoader:
 
     # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
     states_dict = DataLoader.get_states()
+    states_dict["New York State"] = "NY" # address the fact that the csv calls NY "New York State"
     vax_df["abbrev"] = vax_df["location"].map(states_dict)
 
     state_vax_df = vax_df[vax_df["abbrev"] == state_abbrev]
@@ -228,16 +229,16 @@ class DataLoader:
       y = y.append(state_y)
     return X, y
 
-  def get_date_separated_testing_data(num_test_days, state_abbrev):
+  def get_date_separated_testing_data(window_size, num_test_days):
     """Generate an X and y value for each state"""
     # load the case and vaccination data
-    case_data = DataLoader.get_daily_cases_df(state_abbrev)
-    vax_data = DataLoader.get_daily_vaccinations_df(state_abbrev)
-    df = DataLoader.get_case_and_vax_df(case_data, vax_data)
+    X, y = DataLoader.get_windowed_training_data(window_size)
     # generate X and y
-    X = df[:-num_test_days] # all but last n elements
-    y = df[-num_test_days:] # last n elements
-    return X, y
+    X_train = X[:-num_test_days] # all but last n elements
+    y_train = y[:-num_test_days] # all but last n elements
+    y_test = y[-num_test_days:] # last n elements
+    return X_train, y_train, y_test
+
 
   ## Using the Trained Model ## 
 
