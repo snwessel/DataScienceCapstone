@@ -1,9 +1,8 @@
 import pickle
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, TimeSeriesSplit, KFold, cross_validate, GridSearchCV
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.exceptions import ConvergenceWarning
 import torch
 import torch.nn as nn
 from torch.autograd import Variable 

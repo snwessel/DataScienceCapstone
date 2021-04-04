@@ -3,8 +3,7 @@ import models
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-from sklearn.model_selection import train_test_split, TimeSeriesSplit, KFold, cross_validate, GridSearchCV
-from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.exceptions import ConvergenceWarning
 
