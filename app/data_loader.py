@@ -133,12 +133,13 @@ class DataLoader:
 
 
 
-  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=100, multiplier=1):
+  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=30, multiplier=1, past_days_referenced=14):
     """Generate a dictionary containing the predicted number of total vaccinations per day"""
     # use past vaccination information to make a prediction
-    num_past_days = daily_total_vaccines_df.shape[0]
-    current_total_vaccines = daily_total_vaccines_df["total_vaccinations_per_million"].iloc[-1]
-    avg_per_day = (current_total_vaccines / num_past_days) * multiplier
+    vax_per_million = daily_total_vaccines_df["total_vaccinations_per_million"]
+    current_total_vaccines = vax_per_million.iloc[-1]
+    start_total_vaccines = vax_per_million.iloc[-past_days_referenced]
+    avg_per_day = ((current_total_vaccines - start_total_vaccines) / past_days_referenced) * multiplier
     predicted_daily_totals = pd.Series([avg_per_day]).repeat(num_days)
     predicted_daily_totals.iloc[0] += current_total_vaccines
     predicted_daily_totals = predicted_daily_totals.cumsum()
