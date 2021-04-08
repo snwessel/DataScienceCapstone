@@ -30,18 +30,18 @@ class DataLoader:
     # Query the CDC API
     client = Socrata("data.cdc.gov", "qt5QX390BTNWFZ6O36g3oO6Fq")
     results = client.get("9mfq-cb36", state=state_abbrev)
-    results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
+    results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
 
     # update the date formatting
     trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True)
     # remove duplicate case counts
-    dup_idxs = np.where(trimmed_df["created_at"].duplicated())
+    dup_idxs = np.where(trimmed_df["submission_date"].duplicated())
     trimmed_df = trimmed_df.reset_index()
     filtered_df = trimmed_df.drop(dup_idxs[0])
     # get a 7 day average
     filtered_df["new_case"] = filtered_df["new_case"].rolling(window=7).mean()
     filtered_df = filtered_df.dropna()
-    return filtered_df[["created_at", "new_case"]]
+    return filtered_df[["submission_date", "new_case"]]
 
 
   def get_daily_cases_dict(daily_cases_df, state_abbrev):
@@ -49,7 +49,7 @@ class DataLoader:
     results_df = DataLoader.get_daily_cases_df(state_abbrev)
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
-      "date": results_df["created_at"].tolist(),
+      "date": results_df["submission_date"].tolist(),
       "cases": results_df["new_case"].tolist()
     }
     return cases_by_date_dict
@@ -86,7 +86,7 @@ class DataLoader:
   def get_case_and_vax_df(case_df, vax_df):
     """Get a dataframe containing the daily case counts and vaccinations"""
     # merge the dataframes
-    merged_df = pd.merge(case_df, vax_df, left_on="created_at", right_on="date", how="left")
+    merged_df = pd.merge(case_df, vax_df, left_on="submission_date", right_on="date", how="left")
     merged_df.fillna(0, inplace=True)
     # pull out only the values we need
     return merged_df[["new_case", "total_vaccinations_per_million"]]
@@ -97,7 +97,7 @@ class DataLoader:
     # Query the CDC API
     client = Socrata("data.cdc.gov", None)
     results = client.get("9mfq-cb36")
-    results_df = pd.DataFrame.from_records(results).sort_values(by=["created_at"])
+    results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
 
     # TODO: need to determine what to do about NY (New York State) vs NYC (New York City) as 2 separate entities
     #   filter results to only include 50 states (ALSO check if we should just be summarizing over everything including territories (i think no?))
@@ -107,9 +107,9 @@ class DataLoader:
     # aggregate by date
     us_results_df["new_case"] = us_results_df["new_case"].astype(float)
     # TODO: I think this aggregation isn't correct, some dates on the graph have 0 total cases listed which seems wrong (see JIRA ticket for image)
-    agg_df = pd.DataFrame(us_results_df.groupby("created_at")["new_case"].agg(np.sum)).reset_index()
+    agg_df = pd.DataFrame(us_results_df.groupby("submission_date")["new_case"].agg(np.sum)).reset_index()
 
-    return agg_df[["created_at", "new_case"]]
+    return agg_df[["submission_date", "new_case"]]
 
 
   def get_national_cases_dict():
@@ -117,7 +117,7 @@ class DataLoader:
     results_df = DataLoader.get_national_cases_df()
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
-      "date": results_df["created_at"].tolist(),
+      "date": results_df["submission_date"].tolist(),
       "cases": results_df["new_case"].tolist()
     }
     return cases_by_date_dict
