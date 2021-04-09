@@ -1,11 +1,11 @@
 import data_loader
 import models
 import numpy as np
-import pickle
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.exceptions import ConvergenceWarning
+import config_loader
 
 # hide annoying sklearn warnings
 import warnings
@@ -88,7 +88,7 @@ display_graphs = False
 window_sizes = [8, 12, 16, 24, 32]
 
 # get configured window size (so we know which one to save)
-window_size = 24 #app.config['WINDOW_SIZE']
+window_size = config_loader.get_window_size()
 
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")

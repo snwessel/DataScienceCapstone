@@ -1,7 +1,8 @@
 from data_loader import DataLoader
 from models import LinearRegression
+import config_loader
 
-window_size = 24 # TODO: read this from the config file
+window_size = config_loader.get_window_size()
 
 # Load ALL of the training data
 print("Loading training data...")

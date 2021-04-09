@@ -1,13 +1,12 @@
 from data_loader import DataLoader
 from models import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+import config_loader
 
-window_size = 24 # TODO: read this from the config file
-num_days = 14 # the number of days to predict
-
+window_size = config_loader.get_window_size()
+num_days = config_loader.get_num_predicted_days()
 
 # Load the training data with n days held out
-# Note: y_train will not be used here
 print("Loading training data...")
 X_train, y_train, y_test = DataLoader.get_date_separated_testing_data(window_size, num_days,)
 # train the model (and save it to file)
@@ -22,7 +21,7 @@ for state_name, state_abbrev in states.items():
   # get the multi-day predictions 
   case_df = DataLoader.get_daily_cases_df(state_abbrev)[:-num_days]
   vax_df = DataLoader.get_daily_vaccinations_df(state_abbrev)[:-num_days]
-  future_vaccinations = DataLoader.get_assumed_vaccinations_dict(vax_df, multiplier=1)
+  future_vaccinations = DataLoader.get_assumed_vaccinations_dict(vax_df, num_days, multiplier=1)
   predictions_dict = DataLoader.get_predictions(
     case_df,
     vax_df,

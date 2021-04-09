@@ -133,7 +133,7 @@ class DataLoader:
 
 
 
-  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days=30, multiplier=1, past_days_referenced=14):
+  def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days, multiplier=1, past_days_referenced=14):
     """Generate a dictionary containing the predicted number of total vaccinations per day"""
     # use past vaccination information to make a prediction
     vax_per_million = daily_total_vaccines_df["total_vaccinations_per_million"]
