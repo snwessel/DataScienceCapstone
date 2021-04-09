@@ -11,3 +11,4 @@ numpy==1.20.1
 delphi_epidata==0.0.12
 scikit_learn==0.24.1
 gunicorn==19.9.0
+matplotlib==3.1.0
