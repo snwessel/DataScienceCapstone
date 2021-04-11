@@ -27,6 +27,11 @@ def index():
   # get exploratory data
   state_population_dict = DataLoader.get_state_population_counts_dict()
   influenza_dict = DataLoader.get_infuenza_counts_dict()
+  national_total_vax_df = DataLoader.get_total_vaccinations_per_hundred_df()
+  national_total_vax_dict = DataLoader.get_total_vaccinations_per_hundred_dict(national_total_vax_df)
+  national_distrib_vax_df = DataLoader.get_total_distributed_vaccines_per_hundred_df()
+  national_distrib_vax_dict = DataLoader.get_total_distributed_vaccines_per_hundred_dict(national_distrib_vax_df)
+
   # get predictions
   predictions = DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, future_vaccinations["vaccinations"], window_size, num_to_predict)
   
@@ -40,5 +45,7 @@ def index():
                           future_vaccinations=future_vaccinations,
                           state_pop=state_population_dict,
                           influenza_counts=influenza_dict,
+                          national_total_vax_dict=national_total_vax_dict,
+                          national_distrib_vax_dict=national_distrib_vax_dict,
                           predictions=predictions)
 

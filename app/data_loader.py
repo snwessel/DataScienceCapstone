@@ -1,11 +1,11 @@
 import csv
-from delphi_epidata import Epidata
-from datetime import datetime, timedelta
-import numpy as np
-import pandas as pd
 import pickle
 import requests
+import numpy as np
+import pandas as pd
 from sodapy import Socrata
+from delphi_epidata import Epidata
+from datetime import datetime, timedelta
 
 # Utils for loading data
 
@@ -378,3 +378,64 @@ class DataLoader:
       "ili": results_df["ili"].tolist()
     }
     return influenza_dict
+
+  def get_total_vaccinations_per_hundred_df():
+      """Load total vaccine doses administered per hundred for each state (from CSV), return a pandas dataframe."""
+      vax_df = pd.read_csv('data/us_state_vaccinations.csv')
+
+      # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
+      states_dict = DataLoader.get_states()
+      states_dict["New York State"] = "NY" # address the fact that the csv calls NY "New York State"
+      vax_df["abbrev"] = vax_df["location"].map(states_dict)
+
+      # filter by most recent date
+      latest_date = max(list(vax_df["date"].values))
+      latest_date_df = vax_df[vax_df["date"] == latest_date]   
+
+      # only include 50 US states, DC also has to be excluded (for plotly chloropleth constraints)
+      us_results_df = latest_date_df[~latest_date_df["abbrev"].isin(["DC", np.nan])]
+
+      total_vax_national_df = us_results_df[["date", "location", "abbrev", "total_vaccinations_per_hundred"]]
+      return total_vax_national_df
+
+  def get_total_vaccinations_per_hundred_dict(national_vaccinations_df):
+    """Load administered vaccine doses per hundred from CSV, return a dictionary which can be passed into JS"""
+    # return total vaccinations per hundred in a javascript-friendly format
+    national_vaccinations_dict = {
+      "date": national_vaccinations_df["date"].tolist(),
+      "location": national_vaccinations_df["location"].tolist(),
+      "abbrev": national_vaccinations_df["abbrev"].tolist(),
+      "vaccinations": national_vaccinations_df["total_vaccinations_per_hundred"].tolist()
+    }
+    return national_vaccinations_dict
+
+  def get_total_distributed_vaccines_per_hundred_df():
+      """Load cumulative counts of vaccine doses distributed per hundred for each state (from CSV), return a pandas dataframe."""
+      vax_df = pd.read_csv('data/us_state_vaccinations.csv')
+
+      # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
+      states_dict = DataLoader.get_states()
+      states_dict["New York State"] = "NY" # address the fact that the csv calls NY "New York State"
+      vax_df["abbrev"] = vax_df["location"].map(states_dict)
+
+      # filter by most recent date
+      latest_date = max(list(vax_df["date"].values))
+      latest_date_df = vax_df[vax_df["date"] == latest_date]   
+
+      # only include 50 US states, DC also has to be excluded (for plotly chloropleth constraints)
+      us_results_df = latest_date_df[~latest_date_df["abbrev"].isin(["DC", np.nan])]
+
+      total_distrib_vax_df = us_results_df[["date", "location", "abbrev", "distributed_per_hundred"]]
+      return total_distrib_vax_df
+
+  def get_total_distributed_vaccines_per_hundred_dict(national_distrib_vax_df):
+    """Load distributed vaccine doses per hundred from CSV, return a dictionary which can be passed into JS"""
+    # return the count of distributed vaccines per hundred in a javascript-friendly format
+    distrib_vaccines_dict = {
+      "date": national_distrib_vax_df["date"].tolist(),
+      "location": national_distrib_vax_df["location"].tolist(),
+      "abbrev": national_distrib_vax_df["abbrev"].tolist(),
+      "vaccinations": national_distrib_vax_df["distributed_per_hundred"].tolist()
+    }
+    return distrib_vaccines_dict
+    
