@@ -44,7 +44,7 @@ class DataLoader:
     return filtered_df[["submission_date", "new_case"]]
 
 
-  def get_daily_cases_dict(daily_cases_df, state_abbrev):
+  def get_daily_cases_dict(daily_cases_df):
     """Load daily case counts from the CDC API, return a dictionary which can be passed into JS"""
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
@@ -158,6 +158,7 @@ class DataLoader:
       "vaccinations": predicted_daily_totals.tolist()
     }
     return vaccinations_by_date_dict 
+
 
   ## Processing for Training ##  
 
@@ -280,6 +281,62 @@ class DataLoader:
       "predictions": predictions
     }
     return predictions_dict
+
+    
+  def get_future_case_bounds(predictions_dict, num_prev_days):
+    # TODO: get these numbers for a larger number of days, then only index the ones we need
+    mean_error = [ 31.1, 50.04, 73.06, 96.08, 125.56, 155.66, 178.68, 207.84, 224.58, 238.64,
+      272.02, 266.2, 294.96, 290.06, 295.74, 304.4, 335.04, 342.08, 387.62, 391.18, 417.88] # observed mean error for the 21 predicted days
+    predictions = np.array(predictions_dict["predictions"])
+    upper = predictions+mean_error
+    lower = predictions-mean_error
+    return {
+      "upper": upper.tolist(),
+      "lower": lower.tolist()
+    }
+
+  # NOTE: I'm leaving this commented out because I'm not sure if we'll
+  #  want to mention in our paper that we tried this and describe why it didn't work. 
+  #
+  # def get_future_case_bounds(daily_cases_df, num_to_predict, standard_devs):
+  #   """Get the upper and lower limit of probable case counts by modeling the
+  #      case counts as geometric brownian motion, and calculating the variance
+  #      of that statistical model."""
+  #   # Note: To avoid an overflow error in calculating e**a where a is around 60k, we need to make the numbers much smaller
+  #   # calculate the average drift and variance of the observed data so far.
+  #   case_counts = np.array(daily_cases_df["new_case"]) / 1000.0 # will multiply this back in at the end
+  #   n = case_counts.shape[0]
+  #   print("________________________")
+  #   drift = (case_counts[-1] - case_counts[0]) / n # the average change in case counts change per day
+  #   print("Drift:", drift)
+  #   expected_past = pd.Series([drift]).repeat(n)
+  #   expected_past.iloc[0] += case_counts[0]
+  #   expected_past = expected_past.cumsum()
+  #   print("Expected past case counts:", expected_past)
+  #   variance = np.var(case_counts - expected_past)
+  #   print("Variance:", variance)
+  #   # calculate the expected future values
+  #   expected_future = []
+  #   future_variance = []
+  #   for t in range(1, num_to_predict+1):
+  #     # calculate the expected value at time t
+  #     exponent = (drift + variance/2.0)*t
+  #     expected_at_t = case_counts[-1] * np.exp(exponent)
+  #     expected_future.append(expected_at_t)
+  #     # calculate the variance at time t
+  #     exponent = (drift + variance)*2*t
+  #     print("variance exponent", exponent)
+  #     multiplier = 1 - np.exp(-1*variance*t)
+  #     variance_at_t = (case_counts[-1]**2) * np.exp(exponent) * multiplier
+  #     future_variance.append(variance_at_t)
+  #   # calculate upper and lower bounds 
+  #   bound_range = standard_devs * np.sqrt(np.array(future_variance))
+  #   upper_bound = (np.array(expected_future) + bound_range) * 1000
+  #   lower_bound = (np.array(expected_future) - bound_range) * 1000
+  #   return {
+  #     "upper": upper_bound.tolist(),
+  #     "lower": lower_bound.tolist()
+  #   }
 
 
   ## Exploratory Datasets ##

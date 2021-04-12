@@ -1,5 +1,6 @@
 from data_loader import DataLoader
 from models import LinearRegression
+import numpy as np
 from sklearn.metrics import mean_squared_error, r2_score
 import config_loader
 
@@ -12,11 +13,12 @@ X_train, y_train, y_test = DataLoader.get_date_separated_testing_data(window_siz
 # train the model (and save it to file)
 print("Training the model...")
 model = LinearRegression()
-model.train(X_train, y_train, save_model=True)
+model.train(X_train, y_train)
 
 
 # get metrics for the multi-day predictions in each state
 states = DataLoader.get_states()
+all_errors = np.empty((0, num_days))
 for state_name, state_abbrev in states.items():
   # get the multi-day predictions 
   case_df = DataLoader.get_daily_cases_df(state_abbrev)[:-num_days]
@@ -39,7 +41,14 @@ for state_name, state_abbrev in states.items():
   for day in range(num_days):
     error = predictions[day] - y_test[day]
     errors.append(int(error))
-  mse = mean_squared_error(y_test, predictions)
-  #print("Errors in", state_abbrev, "are:", errors)
-  print("MSE in", state_name, "is:", mse)
-  print("R^2 in", state_name, "is", r2_score(y_test, predictions))
+  all_errors = np.append(all_errors, np.array([errors]), axis=0)
+  # mse = mean_squared_error(y_test, predictions)
+  # print("Errors in", state_abbrev, "are:", errors)
+  # print("MSE in", state_name, "is:", mse)
+  # print("R^2 in", state_name, "is", r2_score(y_test, predictions))
+
+all_errors = np.absolute(all_errors)
+print("All Errors shape:", all_errors.shape)
+avgs = np.average(all_errors, axis=0)
+print("Average values:", avgs)
+print(avgs.shape)

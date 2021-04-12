@@ -58,9 +58,10 @@
       var dailyVaccinations = {{ daily_vaccinations|tojson }};
       var futureVaccinations = {{ future_vaccinations|tojson }}
       var predictedCases = {{ predictions|tojson }}
+      var bounds = {{ bounds|tojson }}
       
       // create the visualizations
-      render_prediction_visualization(dailyCases, predictedCases)
+      render_prediction_visualization(dailyCases, predictedCases, bounds)
       render_vaccine_visualization(dailyVaccinations, futureVaccinations)
     </script>
   </section>

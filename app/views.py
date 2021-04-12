@@ -19,7 +19,7 @@ def index():
     daily_cases_dict = DataLoader.get_national_cases_dict()
   else:
     daily_cases_df = DataLoader.get_daily_cases_df(state)
-    daily_cases_dict = DataLoader.get_daily_cases_dict(daily_cases_df, state)
+    daily_cases_dict = DataLoader.get_daily_cases_dict(daily_cases_df)
   # get total vaccination counts
   daily_vaccinations_df = DataLoader.get_daily_vaccinations_df(state)
   daily_vaccinations_dict = DataLoader.get_daily_vaccinations_dict(daily_vaccinations_df, state)
@@ -37,6 +37,7 @@ def index():
 
   # get predictions
   predictions = DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, future_vaccinations["vaccinations"], window_size, num_to_predict)
+  bounds = DataLoader.get_future_case_bounds(predictions, daily_cases_df.shape[0])
   
   # render the HTML template
   return render_template('index.html', 
@@ -51,5 +52,6 @@ def index():
                           influenza_counts=influenza_dict,
                           national_total_vax_dict=national_total_vax_dict,
                           national_distrib_vax_dict=national_distrib_vax_dict,
-                          predictions=predictions)
+                          predictions=predictions, 
+                          bounds=bounds)
 
