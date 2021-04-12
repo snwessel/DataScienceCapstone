@@ -97,13 +97,14 @@
     <script>
       // convert the data from json to a JS object
       var populations = {{ state_pop|tojson }};
-      var influenzaCounts = {{ influenza_counts|tojson }};
+      var nationalCases = {{ national_cases_dict|tojson }};
+      var influenzaCounts = {{ influenza_counts|tojson }};  
       var nationalTotalVaccinations = {{ national_total_vax_dict|tojson }};
       var nationalDistribVaccinations = {{ national_distrib_vax_dict|tojson }};
       
       // create the visualizations
       render_population_visualization(populations)
-      render_influenza_visualization(influenzaCounts)
+      render_influenza_visualization(influenzaCounts, nationalCases)
       render_total_vax_visualization(nationalTotalVaccinations)
       render_distrib_vax_visualization(nationalDistribVaccinations)
     </script>
