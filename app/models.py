@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
+from sklearn.neural_network import MLPRegressor
+import time
 import torch
 import torch.nn as nn
 from torch.autograd import Variable 
@@ -13,7 +15,7 @@ def save_trained_model(model):
   pickle.dump(s, open("data/trained_model.p", "wb"))
 
 # an abstract class which has functions that are helpful for all of the regression models
-class RegressionModel():
+class WindowBasedModel():
   """An interface for the regression models."""
   def __init__(self):
     self.model = None
@@ -29,10 +31,13 @@ class RegressionModel():
   def predict(self, x):
     return self.model.predict(x)
 
-  def display_metrics(self, train_test_data, show_plot=False):
+  def display_metrics(self, train_test_data, show_plot=False, selected_params=None):
     print(self.model_name, "performance:")
     y_train_pred = self.model.predict(train_test_data.X_train)
     y_test_pred = self.model.predict(train_test_data.X_test)
+
+    if selected_params:
+      print("\tSelected parameters:", selected_params)
 
     # Mean Squared Error
     print('\tMSE train: %.3f, test: %.3f' % (mean_squared_error(train_test_data.y_train, y_train_pred),
@@ -51,7 +56,40 @@ class RegressionModel():
       plt.show()
 
 
-class LinearRegression(RegressionModel):
+class MultiLayerPerceptron(WindowBasedModel):
+  def __init__(self):
+    """Initialize the hyperparameters to what we have found to perform the best in the past."""
+    self.best_params = {"activation": "relu", "solver": "lbfgs", "hidden_layer_sizes": (100,)}
+    self.model = None
+    self.model_name = "Multi-Layer Perceptron"
+
+  def get_best_params(self, train_test_data):
+    """Perform cross validation to get the best parameters."""
+    print("Finding the best parameters for the MLP")
+    start_time = time.perf_counter()
+    param_grid = {
+      "activation": ["relu"], #["logistic", "tanh", "relu"], 
+      "solver": ["lbfgs"], # ["lbfgs", "adam"],
+      "hidden_layer_sizes": [(100,), (200,)]# [(100,), (100, 50), (150,100,50)]
+      }
+    grid = GridSearchCV(MLPRegressor(), param_grid, cv=TimeSeriesSplit())
+    search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
+    self.best_params = search_results.best_params_
+    print("MLP Cross validation took", time.perf_counter() - start_time, "seconds.")
+    return self.best_params
+
+  def train(self, X_train, y_train, save_model=False):
+    self.model = MLPRegressor(random_state=1, 
+      max_iter=500,
+      activation=self.best_params["activation"],
+      solver=self.best_params["solver"],
+      hidden_layer_sizes=self.best_params["hidden_layer_sizes"]
+      ).fit(X_train, y_train)
+    if save_model:
+      print("Saving MLP model")
+      save_trained_model(self.model)
+
+class LinearRegression(WindowBasedModel):
   def __init__(self):
     """Initialize the hyperparameters to what we have found to perform the best in the past."""
     self.best_params = {'copy_X': True, 'fit_intercept': True, 'n_jobs': None, 'normalize': False}
@@ -77,7 +115,7 @@ class LinearRegression(RegressionModel):
       print("Saving linear regression model")
       save_trained_model(self.model)
 
-class RidgeRegression(RegressionModel):
+class RidgeRegression(WindowBasedModel):
   def __init__(self):
     """Initialize the hyperparameters to what we have found to perform the best in the past."""
     self.best_params = {
@@ -110,7 +148,7 @@ class RidgeRegression(RegressionModel):
       print("Saving ridge regression model")
       save_trained_model(self.model)
 
-class LassoRegression(RegressionModel):
+class LassoRegression(WindowBasedModel):
   def __init__(self):
     """Initialize the hyperparameters to what we have found to perform the best in the past."""
     self.best_params = {'alpha': 1.0, 'tol': 0.0001}

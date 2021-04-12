@@ -24,7 +24,7 @@ class TrainTestData:
     y_arr = np.array(y).astype(int)
 
     # Keep in mind: for future, maybe only include days with vaccine info?
-    X_train, X_test, y_train, y_test = train_test_split(X_arr, y_arr, test_size=0.33)  # default test_size: 0.25
+    X_train, X_test, y_train, y_test = train_test_split(X_arr, y_arr, test_size=0.25)  # default test_size: 0.25
 
     return X_train, X_test, y_train, y_test
 
@@ -55,23 +55,30 @@ def train_test_linear_regression(train_test_data, show_plot=False, save_model=Fa
   # print("RMSE: {0:.3f} (+/- {1:.3f})".format(kf_scores["test_neg_root_mean_squared_error"].mean(), kf_scores["test_neg_root_mean_squared_error"].std()))
   # print("Min RMSE: {0:.3f}".format(min(kf_scores["test_neg_root_mean_squared_error"])))
   model = models.LinearRegression()
-  model.get_best_params(train_test_data)
+  best_params = model.get_best_params(train_test_data)
   model.train(train_test_data.X_train, train_test_data.y_train, save_model=save_model)
-  model.display_metrics(train_test_data, show_plot=show_plot)
+  model.display_metrics(train_test_data, show_plot=show_plot, selected_params=best_params)
 
 
 def train_test_ridge_regression(train_test_data, show_plot=False, save_model=False):
   model = models.RidgeRegression()
-  model.get_best_params(train_test_data)
+  best_params = model.get_best_params(train_test_data)
   model.train(train_test_data.X_train, train_test_data.y_train, save_model=save_model)
-  model.display_metrics(train_test_data, show_plot=show_plot)
+  model.display_metrics(train_test_data, show_plot=show_plot, selected_params=best_params)
   
 
 def train_test_lasso(train_test_data, show_plot=False, save_model=False):
   model = models.RidgeRegression()
-  model.get_best_params(train_test_data)
+  best_params = model.get_best_params(train_test_data)
   model.train(train_test_data.X_train, train_test_data.y_train, save_model=save_model)
-  model.display_metrics(train_test_data, show_plot=show_plot)
+  model.display_metrics(train_test_data, show_plot=show_plot, selected_params=best_params)
+
+
+def train_test_MLP(train_test_data, show_plot=False, save_model=False):
+  model = models.MultiLayerPerceptron()
+  best_params = model.get_best_params(train_test_data)
+  model.train(train_test_data.X_train, train_test_data.y_train, save_model=save_model)
+  model.display_metrics(train_test_data, show_plot=show_plot, selected_params=best_params)
 
 
 def train_test_control(windowed_data):
@@ -85,18 +92,14 @@ def train_test_control(windowed_data):
 
 ### Performance Analysis ###
 display_graphs = False
-window_sizes = [8, 12, 16, 24, 32]
-
-# get configured window size (so we know which one to save)
-window_size = config_loader.get_window_size()
+window_sizes = [8, 12, 16, 20, 24, 32]
 
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")
   windowed_data = TrainTestData(window_size)
 
-  save_lin_reg = (window_size == 24) # save lin reg model when window=24
-
-  train_test_linear_regression(windowed_data, display_graphs, save_model=save_lin_reg)
-  train_test_ridge_regression(windowed_data, display_graphs)
-  train_test_lasso(windowed_data, display_graphs)
-  train_test_control(windowed_data)
+  train_test_MLP(windowed_data, display_graphs)
+  train_test_linear_regression(windowed_data, display_graphs)
+  # train_test_ridge_regression(windowed_data, display_graphs)
+  # train_test_lasso(windowed_data, display_graphs)
+  # train_test_control(windowed_data)
