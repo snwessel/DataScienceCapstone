@@ -46,11 +46,10 @@ class DataLoader:
 
   def get_daily_cases_dict(daily_cases_df, state_abbrev):
     """Load daily case counts from the CDC API, return a dictionary which can be passed into JS"""
-    results_df = DataLoader.get_daily_cases_df(state_abbrev)
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
-      "date": results_df["submission_date"].tolist(),
-      "cases": results_df["new_case"].tolist()
+      "date": daily_cases_df["submission_date"].tolist(),
+      "cases": daily_cases_df["new_case"].tolist()
     }
     return cases_by_date_dict
 
@@ -152,7 +151,7 @@ class DataLoader:
       "date": future_dates,
       "vaccinations": predicted_daily_totals.tolist()
     }
-    return vaccinations_by_date_dict
+    return vaccinations_by_date_dict 
 
   ## Processing for Training ##  
 
