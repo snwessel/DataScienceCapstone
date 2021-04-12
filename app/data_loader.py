@@ -1,11 +1,11 @@
 import csv
-from delphi_epidata import Epidata
-from datetime import datetime, timedelta
-import numpy as np
-import pandas as pd
 import pickle
 import requests
+import numpy as np
+import pandas as pd
 from sodapy import Socrata
+from delphi_epidata import Epidata
+from datetime import datetime, timedelta
 
 # Utils for loading data
 
@@ -91,33 +91,39 @@ class DataLoader:
     return merged_df[["new_case", "total_vaccinations_per_million"]]
 
 
-  def get_national_cases_df():
-    """Load national daily case counts from the CDC API, return a pandas dataframe."""
+  def get_national_cases_df(date_bound=None):
+    """Load national daily case counts from the CDC API, return a pandas dataframe. If specified, only return cases up to the date_bound."""
     # Query the CDC API
     client = Socrata("data.cdc.gov", None)
-    results = client.get("9mfq-cb36")
+    results = client.get("9mfq-cb36", limit=10000)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
 
     # TODO: need to determine what to do about NY (New York State) vs NYC (New York City) as 2 separate entities
     #   filter results to only include 50 states (ALSO check if we should just be summarizing over everything including territories (i think no?))
     #   should DC be included? currently I have it but should that not count
     us_results_df = results_df[~results_df["state"].isin(["GU", "RMI", "MP", "PR", "VI", "PW", "FSM", "AS", "US"])]
+    
+    # update the date formatting
+    trimmed_df = us_results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True).copy()
 
     # aggregate by date
-    us_results_df["new_case"] = us_results_df["new_case"].astype(float)
-    # TODO: I think this aggregation isn't correct, some dates on the graph have 0 total cases listed which seems wrong (see JIRA ticket for image)
-    agg_df = pd.DataFrame(us_results_df.groupby("submission_date")["new_case"].agg(np.sum)).reset_index()
+    trimmed_df["new_case"] = trimmed_df["new_case"].astype(float)
+    agg_df = pd.DataFrame(trimmed_df.groupby("submission_date")["new_case"].agg(np.sum)).reset_index()
 
-    return agg_df[["submission_date", "new_case"]]
+    national_cases_df = agg_df.copy().reset_index()
+    national_cases_df = national_cases_df[["submission_date", "new_case"]]
 
+    if date_bound is not None:
+        national_cases_df = national_cases_df[national_cases_df["submission_date"] < date_bound]
 
-  def get_national_cases_dict():
+    return national_cases_df
+
+  def get_national_cases_dict(national_cases_df):
     """Load national daily case counts from the CDC API, return a dictionary which can be passed into JS"""
-    results_df = DataLoader.get_national_cases_df()
     # return the new cases by date in a javascript-friendly format
     cases_by_date_dict = {
-      "date": results_df["submission_date"].tolist(),
-      "cases": results_df["new_case"].tolist()
+      "date": national_cases_df["submission_date"].tolist(),
+      "cases": national_cases_df["new_case"].tolist()
     }
     return cases_by_date_dict
 
@@ -353,27 +359,105 @@ class DataLoader:
     }
     return policy_dict
 
-  # TODO: finish implementing
+  def get_approx_date_from_epiweek(epiweek):
+    """Calculates approximate date based on epiweek. Epiweek formatted YYYYWW, with WW meaning week between 01-53."""
+    year = int(str(epiweek)[:4])
+    week = int(str(epiweek)[4:])
+
+    if week == 53:
+      days = (1 + (week - 1) * 7)
+    else:
+      days = week * 7
+    
+    new_date = datetime(year, 1, 1)
+    new_date = new_date + timedelta(days=days - 1)
+
+    # Format it as a string to match COVID date formatting
+    return new_date.strftime("%Y-%m-%d")
+
   def get_influenza_counts_df():
     """Load influenza counts from the CMU Delphi API, return a pandas dataframe"""
     # Retrieves national fluview data for each "epiweek" from 2020:
-    # TODO: could try to compare this against COVID cases, either convert COVID cases to epiweeks or vice versa
     results = Epidata.fluview(["nat"], [Epidata.range(202001, 202053)])
     results_df = pd.DataFrame.from_records(results["epidata"]).sort_values(by=["epiweek"])
     results_df = results_df[["epiweek", "lag", "num_ili", "num_patients", "num_providers", "wili", "ili"]]
+
+    # Convert epiweeks to approximate real date for graphing
+    results_df["date"] = results_df["epiweek"].apply(DataLoader.get_approx_date_from_epiweek)
     return results_df
 
-  def get_infuenza_counts_dict():
+  def get_influenza_counts_dict(influenza_df):
     """Load influenza counts from the CMU Delphi API, return a dictionary which can be passed into JS"""
-    results_df = DataLoader.get_influenza_counts_df()
     # return the flu data in a javascript-friendly format
     influenza_dict = {
-      "epiweek": results_df["epiweek"].tolist(),
-      "lag": results_df["lag"].tolist(),
-      "num_ili": results_df["num_ili"].tolist(),
-      "num_patients": results_df["num_patients"].tolist(),
-      "num_providers": results_df["num_providers"].tolist(),
-      "wili": results_df["wili"].tolist(),
-      "ili": results_df["ili"].tolist()
+      "epiweek": influenza_df["epiweek"].tolist(),
+      "date": influenza_df["date"].tolist(),
+      "lag": influenza_df["lag"].tolist(),
+      "num_ili": influenza_df["num_ili"].tolist(),
+      "num_patients": influenza_df["num_patients"].tolist(),
+      "num_providers": influenza_df["num_providers"].tolist(),
+      "wili": influenza_df["wili"].tolist(),
+      "ili": influenza_df["ili"].tolist()
     }
     return influenza_dict
+
+  def get_total_vaccinations_per_hundred_df():
+      """Load total vaccine doses administered per hundred for each state (from CSV), return a pandas dataframe."""
+      vax_df = pd.read_csv('data/us_state_vaccinations.csv')
+
+      # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
+      states_dict = DataLoader.get_states()
+      states_dict["New York State"] = "NY" # address the fact that the csv calls NY "New York State"
+      vax_df["abbrev"] = vax_df["location"].map(states_dict)
+
+      # filter by most recent date
+      latest_date = max(list(vax_df["date"].values))
+      latest_date_df = vax_df[vax_df["date"] == latest_date]   
+
+      # only include 50 US states, DC also has to be excluded (for plotly chloropleth constraints)
+      us_results_df = latest_date_df[~latest_date_df["abbrev"].isin(["DC", np.nan])]
+
+      total_vax_national_df = us_results_df[["date", "location", "abbrev", "total_vaccinations_per_hundred"]]
+      return total_vax_national_df
+
+  def get_total_vaccinations_per_hundred_dict(national_vaccinations_df):
+    """Load administered vaccine doses per hundred from CSV, return a dictionary which can be passed into JS"""
+    # return total vaccinations per hundred in a javascript-friendly format
+    national_vaccinations_dict = {
+      "date": national_vaccinations_df["date"].tolist(),
+      "location": national_vaccinations_df["location"].tolist(),
+      "abbrev": national_vaccinations_df["abbrev"].tolist(),
+      "vaccinations": national_vaccinations_df["total_vaccinations_per_hundred"].tolist()
+    }
+    return national_vaccinations_dict
+
+  def get_total_distributed_vaccines_per_hundred_df():
+      """Load cumulative counts of vaccine doses distributed per hundred for each state (from CSV), return a pandas dataframe."""
+      vax_df = pd.read_csv('data/us_state_vaccinations.csv')
+
+      # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
+      states_dict = DataLoader.get_states()
+      states_dict["New York State"] = "NY" # address the fact that the csv calls NY "New York State"
+      vax_df["abbrev"] = vax_df["location"].map(states_dict)
+
+      # filter by most recent date
+      latest_date = max(list(vax_df["date"].values))
+      latest_date_df = vax_df[vax_df["date"] == latest_date]   
+
+      # only include 50 US states, DC also has to be excluded (for plotly chloropleth constraints)
+      us_results_df = latest_date_df[~latest_date_df["abbrev"].isin(["DC", np.nan])]
+
+      total_distrib_vax_df = us_results_df[["date", "location", "abbrev", "distributed_per_hundred"]]
+      return total_distrib_vax_df
+
+  def get_total_distributed_vaccines_per_hundred_dict(national_distrib_vax_df):
+    """Load distributed vaccine doses per hundred from CSV, return a dictionary which can be passed into JS"""
+    # return the count of distributed vaccines per hundred in a javascript-friendly format
+    distrib_vaccines_dict = {
+      "date": national_distrib_vax_df["date"].tolist(),
+      "location": national_distrib_vax_df["location"].tolist(),
+      "abbrev": national_distrib_vax_df["abbrev"].tolist(),
+      "vaccinations": national_distrib_vax_df["distributed_per_hundred"].tolist()
+    }
+    return distrib_vaccines_dict
+    

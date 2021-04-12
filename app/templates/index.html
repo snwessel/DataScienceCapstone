@@ -4,7 +4,7 @@
   <h3>COVID Vaccination Data Exploration</h3>
   <p class="font-italic">This is work in progress!</p>
   <section>
-    <h1>Predictions</h1>
+    <h1 id="predictions">Predictions</h1>
     <p>
       Showing data for <b>{{ state }}</b> and assuming that the future 
       vaccination rate will be <b>{{ multiplier }}x</b> the past vaccination rate.</p>
@@ -65,7 +65,7 @@
     </script>
   </section>
   <section>
-    <h1>Data Exploration</h1>
+    <h1 id="exploration">Data Exploration</h1>
     <!-- TODO: make exploration graphs-->
     <!-- Potential exploration graph type https://plotly.com/javascript/splom/ -->
     <!-- Basic scatterplot https://plotly.com/javascript/line-and-scatter/-->
@@ -84,14 +84,29 @@
         <div id="influenza_dataviz"></div>
       </div>
     </div>
+    <div class="row">
+      <div class="col">
+        <div id="total_vax_dataviz"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div id="distrib_vax_dataviz"></div>
+      </div>
+    </div>
     <script>
       // convert the data from json to a JS object
       var populations = {{ state_pop|tojson }};
-      var influenzaCounts = {{ influenza_counts|tojson }};
+      var nationalCases = {{ national_cases_dict|tojson }};
+      var influenzaCounts = {{ influenza_counts|tojson }};  
+      var nationalTotalVaccinations = {{ national_total_vax_dict|tojson }};
+      var nationalDistribVaccinations = {{ national_distrib_vax_dict|tojson }};
       
       // create the visualizations
       render_population_visualization(populations)
-      render_influenza_visualization(influenzaCounts)
+      render_influenza_visualization(influenzaCounts, nationalCases)
+      render_total_vax_visualization(nationalTotalVaccinations)
+      render_distrib_vax_visualization(nationalDistribVaccinations)
     </script>
   </section>
 {% endblock %}
