@@ -39,11 +39,15 @@ jobs:
             python -m pip install --user -r requirements.txt
       
       - name: fetch-data
-        run: python app/get_vaccination_data.py
+        run: |
+            python app/get_vaccination_data.py
+            python app/get_social_distancing_data.py
 
       - name: update-data
         uses: test-room-7/action-update-file@v1
         with:
-          file-path: data/us_state_vaccinations.csv
-          commit-msg: Automatically update us_state_vaccinations.csv
+          file-path: |
+              data/us_state_vaccinations.csv
+              data/social_distancing_master_file.csv
+          commit-msg: Automatically update data sources
           github-token: ${{ secrets.GITHUB_TOKEN }}
