@@ -21,7 +21,7 @@ jobs:
   # This workflow contains a single job called "data-update"
   data-update:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -36,14 +36,14 @@ jobs:
       - name: install-dependencies
         run: |
             python -m pip install --upgrade pip
-            if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+            python -m pip install --user -r requirements.txt
       
       - name: fetch-data
-        run: python ../../app/get_vaccination_data.py
+        run: python ..\..\app\get_vaccination_data.py
 
       - name: update-data
         uses: test-room-7/action-update-file@v1
         with:
-          file-path: ../../data/us_state_vaccinations.csv
+          file-path: ..\..\data\us_state_vaccinations.csv
           commit-msg: Automatically update us_state_vaccinations.csv
           github-token: ${{ secrets.GITHUB_TOKEN }}
