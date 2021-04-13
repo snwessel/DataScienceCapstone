@@ -55,7 +55,7 @@ class DataLoader:
 
 
   def get_daily_vaccinations_df(state_abbrev):
-    """Load daily vaccination counts from CSV, return a pandas dataframe. CSV contains data up to 3/6/2021."""
+    """Load daily vaccination counts from CSV, return a pandas dataframe. CSV contains data up to 4/10/2021."""
     vax_df = pd.read_csv('data/us_state_vaccinations.csv')
 
     # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
@@ -97,14 +97,9 @@ class DataLoader:
     client = Socrata("data.cdc.gov", None)
     results = client.get("9mfq-cb36", limit=10000)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
-
-    # TODO: need to determine what to do about NY (New York State) vs NYC (New York City) as 2 separate entities
-    #   filter results to only include 50 states (ALSO check if we should just be summarizing over everything including territories (i think no?))
-    #   should DC be included? currently I have it but should that not count
-    us_results_df = results_df[~results_df["state"].isin(["GU", "RMI", "MP", "PR", "VI", "PW", "FSM", "AS", "US"])]
     
     # update the date formatting
-    trimmed_df = us_results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True).copy()
+    trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True).copy()
 
     # aggregate by date
     trimmed_df["new_case"] = trimmed_df["new_case"].astype(float)
