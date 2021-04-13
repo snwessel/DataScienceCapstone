@@ -55,7 +55,7 @@ class DataLoader:
 
 
   def get_daily_vaccinations_df(state_abbrev):
-    """Load daily vaccination counts from CSV, return a pandas dataframe. CSV contains data up to 4/10/2021."""
+    """Load daily vaccination counts from CSV, return a pandas dataframe."""
     vax_df = pd.read_csv('data/us_state_vaccinations.csv')
 
     # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
@@ -383,7 +383,7 @@ class DataLoader:
     return list(social_dist_df.columns)
   
   def get_state_policy_df(state_policy):
-    """Load most up to date social distancing policies from CSV, return a pandas dataframe. CSV contains data up to 4/10/2021."""
+    """Load most up to date social distancing policies from CSV, return a pandas dataframe."""
     # Columns:  ['Region', 'Status of Reopening', 'Stay at Home Order', 'Mandatory Quarantine for Travelers', 'Non-Essential Business Closures',
     #   'Large Gatherings Ban', 'Restaurant Limits', 'Bar Closures*', 'Statewide Face Mask Requirement', 'Emergency Declaration']
     # There is a row for the US or for a particular state
@@ -394,7 +394,10 @@ class DataLoader:
     # Mapping to state ID in case data is wanted for a state instead of the US
     states_dict = DataLoader.get_states()
     state_policy_df["Abbreviation"] = state_policy_df["Region"].map(states_dict)
-    
+
+    # Clean up Large Gatherings Ban column to ensure text is consistent
+    state_policy_df["Large Gatherings Ban"] = state_policy_df["Large Gatherings Ban"].str.replace('>\s', '>', regex=True)
+
     # Remove DC since DC isn't supported by the chloropleth version we are plotting
     state_policy_df = state_policy_df[state_policy_df["Abbreviation"] != "DC"]
 
