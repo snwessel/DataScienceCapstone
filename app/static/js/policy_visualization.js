@@ -36,8 +36,17 @@ function render_policy_visualization(statePolicyInfo) {
         data.push(policyDict);
     };
 
+    // creating and formatting date to display on chart
+    const date = new Date();
+    var year = date.getFullYear();
+    var day = date.getDate();
+    // padding months, JS months are also from 0-11
+    var month = date.getMonth() + 1;
+    var paddedMonth = (month < 10 ? '0' : '') + month;
+    var formattedDate = `${year}-${paddedMonth}-${day}`;
+
     var layout = {
-        title: `${statePolicyInfo["policy_name"]} for Each State`,
+        title: `${statePolicyInfo["policy_name"]} for Each State (as of ${formattedDate})`,
         showlegend: true,
         paper_bgcolor: '#fafaee',
         geo: {
