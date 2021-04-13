@@ -27,7 +27,8 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-      - uses: actions/setup-python@v2
+      - name: setup-python
+        uses: actions/setup-python@v2
         with:
           python-version: '3.x' # Version range or exact version of a Python version to use, using SemVer's version range syntax
           architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
@@ -41,7 +42,7 @@ jobs:
         run: python ../../app/get_vaccination_data.py
 
       - name: update-data
-      - uses: test-room-7/action-update-file@v1
+        uses: test-room-7/action-update-file@v1
         with:
           file-path: ../../data/us_state_vaccinations.csv
           commit-msg: Automatically update us_state_vaccinations.csv
