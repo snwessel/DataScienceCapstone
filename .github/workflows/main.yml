@@ -5,13 +5,13 @@ name: UpdateDataSources
 # Controls when the action will run. 
 on:
   # Triggers the workflow on push or pull request events but only for the main branch
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  # CRON schedule at 2am UTC (10PM EDT)
+  #push:
+  #  branches: [ main ]
+  #pull_request:
+  #  branches: [ main ]
+  # CRON schedule at 7pm UTC (3pm EDT)
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 19 * * *'
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
