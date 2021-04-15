@@ -11,7 +11,7 @@ def index():
   num_to_predict = config_loader.get_num_predicted_days()
 
   args = request.args.to_dict()
-  state = args.get("state", "MA") # temporarily defaulting to MA since vaccinations aren't loading for the US yet
+  state = args.get("state", "US")
   multiplier = float(args.get("multiplier", "1"))
   policy = args.get("policy", "Large Gatherings Ban") # defaulting to Large Gatherings Ban
   policy = urllib.parse.unquote(policy)
@@ -19,7 +19,8 @@ def index():
   all_states = DataLoader.get_states()
   # get daily case counts
   if state == "US":
-    daily_cases_dict = DataLoader.get_national_cases_dict()
+    daily_cases_df = DataLoader.get_national_cases_df()
+    daily_cases_dict = DataLoader.get_national_cases_dict(daily_cases_df)
   else:
     daily_cases_df = DataLoader.get_daily_cases_df(state)
     daily_cases_dict = DataLoader.get_daily_cases_dict(daily_cases_df)

@@ -94,8 +94,8 @@ class DataLoader:
   def get_national_cases_df(date_bound=None):
     """Load national daily case counts from the CDC API, return a pandas dataframe. If specified, only return cases up to the date_bound."""
     # Query the CDC API
-    client = Socrata("data.cdc.gov", None)
-    results = client.get("9mfq-cb36", limit=10000)
+    client = Socrata("data.cdc.gov", "qt5QX390BTNWFZ6O36g3oO6Fq")
+    results = client.get("9mfq-cb36", limit=50000)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
     
     # update the date formatting
@@ -110,6 +110,10 @@ class DataLoader:
 
     if date_bound is not None:
         national_cases_df = national_cases_df[national_cases_df["submission_date"] < date_bound]
+
+    # get a 7 day average
+    national_cases_df["new_case"] = national_cases_df["new_case"].rolling(window=7).mean()
+    national_cases_df = national_cases_df.dropna()
 
     return national_cases_df
 
