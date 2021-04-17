@@ -2,12 +2,27 @@
 
 {% block content %}
   <h3>COVID Vaccination Data Exploration</h3>
-  <p class="font-italic">This is work in progress!</p>
+  <!-- general description of project -->
+  <!-- could add little picture or something? -->
+  <!-- add footer with github link and made with love by us in year or something -->
+  <p>
+    This project aims to explore data surrounding COVID cases and vaccinations in the United States. 
+    Below, we have created a dashboard that will allow users to explore predicted outcomes based on changes 
+    to future vaccination rates. Users can investigate how the case rates of their chosen state will change 
+    over the coming months if their state changes their vaccination rate. There are additional visualizations 
+    under the 'Data Exploration' section that display information regarding state demographic information, 
+    the relationship between COVID cases and influenza-like illnesses, state policy decisions, and vaccine 
+    administration and distribution.
+  </p>
   <section>
     <h1 id="predictions">Predictions</h1>
     <p>
       Showing data for <b>{{ state }}</b> and assuming that the future 
-      vaccination rate will be <b>{{ multiplier }}x</b> the past vaccination rate.</p>
+      vaccination rate will be <b>{{ multiplier }}x</b> the past vaccination rate.
+      ---in progress---
+      -> explain model we are using
+      -> disclaimer in like italics or something that we calculated this and its a project and everything and not ground truth
+    </p>
 
     <!-- Dropdowns-->
     <div class="row">
@@ -41,7 +56,6 @@
       </div>
     </div>
 
-    <!-- TODO create prediction graph (like https://plotly.com/javascript/continuous-error-bars/) -->
     <div class="row">
       <div class="col">
         <div id="prediction_dataviz"></div>
@@ -49,6 +63,7 @@
     </div>
     <div class="row">
       <div class="col">
+        <p>The unadjusted future vaccination rate is based on data from the last 14 days.</p>
         <div id="vaccine_dataviz"></div>
       </div>
     </div>
@@ -67,20 +82,33 @@
   </section>
   <section>
     <h1 id="exploration">Data Exploration</h1>
-    <!-- TODO: make exploration graphs-->
-    <!-- Potential exploration graph type https://plotly.com/javascript/splom/ -->
-    <!-- Basic scatterplot https://plotly.com/javascript/line-and-scatter/-->
     <div class="row">
       <div class="col">
+        <p>
+          --in progress-- 
+          -> filter out demographics by doing (click (or 2??)) 
+          -> i guess just in general whatever else goes on viz
+        </p>
         <div id="population_dataviz"></div>
       </div>
     </div>
     <div class="row">
       <div class="col">
+        <br>
+        <p>
+          --in progress-- 
+          -> flu season (when peak is) ((showing on chart could be cool too?))
+          -> pointing out that there wasn't a spike in december that would have been expected
+        </p>
         <div id="influenza_dataviz"></div>
       </div>
     </div>
     <div class="col-auto">
+      <p>
+        --in progress-- 
+        -> Showing data for *bolded state policy*
+        -> select that to chose other as well!!!!!!!!!
+      </p>
       <div class="dropdown">
         <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
           Select State Policy Action
@@ -99,11 +127,17 @@
     </div>
     <div class="row">
       <div class="col">
+        <p>
+          --in progress-- (if anything i think of to write?)
+        </p>
         <div id="total_vax_dataviz"></div>
       </div>
     </div>
     <div class="row">
       <div class="col">
+        <p>
+          --in progress-- (if anything i think of to write?)
+        </p>
         <div id="distrib_vax_dataviz"></div>
       </div>
     </div>
