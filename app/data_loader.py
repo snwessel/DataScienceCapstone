@@ -55,7 +55,7 @@ class DataLoader:
 
 
   def get_daily_vaccinations_df(state_abbrev):
-    """Load daily vaccination counts from CSV, return a pandas dataframe. """
+    """Load daily vaccination counts from CSV, return a pandas dataframe."""
     vax_df = pd.read_csv('data/us_state_vaccinations.csv')
 
     # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
@@ -94,17 +94,12 @@ class DataLoader:
   def get_national_cases_df(date_bound=None):
     """Load national daily case counts from the CDC API, return a pandas dataframe. If specified, only return cases up to the date_bound."""
     # Query the CDC API
-    client = Socrata("data.cdc.gov", None)
-    results = client.get("9mfq-cb36", limit=10000)
+    client = Socrata("data.cdc.gov", "qt5QX390BTNWFZ6O36g3oO6Fq")
+    results = client.get("9mfq-cb36", limit=50000)
     results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"])
-
-    # TODO: need to determine what to do about NY (New York State) vs NYC (New York City) as 2 separate entities
-    #   filter results to only include 50 states (ALSO check if we should just be summarizing over everything including territories (i think no?))
-    #   should DC be included? currently I have it but should that not count
-    us_results_df = results_df[~results_df["state"].isin(["GU", "RMI", "MP", "PR", "VI", "PW", "FSM", "AS", "US"])]
     
     # update the date formatting
-    trimmed_df = us_results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True).copy()
+    trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True).copy()
 
     # aggregate by date
     trimmed_df["new_case"] = trimmed_df["new_case"].astype(float)
@@ -115,6 +110,10 @@ class DataLoader:
 
     if date_bound is not None:
         national_cases_df = national_cases_df[national_cases_df["submission_date"] < date_bound]
+
+    # get a 7 day average
+    national_cases_df["new_case"] = national_cases_df["new_case"].rolling(window=7).mean()
+    national_cases_df = national_cases_df.dropna()
 
     return national_cases_df
 
@@ -341,7 +340,7 @@ class DataLoader:
 
   ## Exploratory Datasets ##
 
-
+  # NOTE: not fixed/re-implemented yet
   def get_state_population_counts_df():
     """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
     # TODO: Clean up request URL, probably don't need it in multiple parts
@@ -369,7 +368,7 @@ class DataLoader:
 
     return census_df
 
-
+  # NOTE: not fixed/re-implemented yet
   def get_state_population_counts_dict():
     """Load state population estimate counts from the Census Bureau API, return a dictionary which can be passed into JS"""
     results_df = DataLoader.get_state_population_counts_df()
@@ -380,40 +379,64 @@ class DataLoader:
     }
     return state_pop_dict
 
-
-  def get_social_distancing_df(state_abbrev):
-    """Load most up to date social distancing policies from CSV, return a pandas dataframe. CSV contains data up to 3/9/2021."""
+  def get_state_policy_actions():
+    """Return list of state policy actions to be loaded into a dropdown button."""
+    social_dist_df = pd.read_csv("data/social_distancing_master_file.csv")
+    social_dist_df.drop('Unnamed: 0', axis=1, inplace=True)
+    
+    return list(social_dist_df.columns)
+  
+  def get_state_policy_df(state_policy):
+    """Load most up to date social distancing policies from CSV, return a pandas dataframe."""
     # Columns:  ['Region', 'Status of Reopening', 'Stay at Home Order', 'Mandatory Quarantine for Travelers', 'Non-Essential Business Closures',
     #   'Large Gatherings Ban', 'Restaurant Limits', 'Bar Closures*', 'Statewide Face Mask Requirement', 'Emergency Declaration']
     # There is a row for the US or for a particular state
-    social_dist_df = pd.read_csv("social_distancing_master_file.csv")
-    social_dist_df.rename(columns={"Unnamed: 0": "Region"}, inplace=True)
-    social_dist_df.drop(0, axis=0, inplace=True)
+    state_policy_df = pd.read_csv("data/social_distancing_master_file.csv")
+    state_policy_df.rename(columns={"Unnamed: 0": "Region"}, inplace=True)
+    state_policy_df.drop(0, axis=0, inplace=True)
 
     # Mapping to state ID in case data is wanted for a state instead of the US
     states_dict = DataLoader.get_states()
-    social_dist_df["Abbreviation"] = social_dist_df["Region"].map(states_dict)
+    state_policy_df["Abbreviation"] = state_policy_df["Region"].map(states_dict)
 
-    state_policy_df = social_dist_df[social_dist_df["Abbreviation"] == state_abbrev]
+    # Clean up Large Gatherings Ban column to ensure text is consistent
+    state_policy_df["Large Gatherings Ban"] = state_policy_df["Large Gatherings Ban"].str.replace('>\s', '>', regex=True)
+
+    # Remove DC since DC isn't supported by the chloropleth version we are plotting
+    state_policy_df = state_policy_df[state_policy_df["Abbreviation"] != "DC"]
+
+    # Mapping policy type to index to create a factor so the values can be used for visualizations
+    policy_nums = list(np.unique(state_policy_df[state_policy].values))
+    
+    # Moving 'All Gatherings Prohibited' to the front so it is in order of severity/restrictedness
+    if state_policy == "Large Gatherings Ban":
+      policy_nums.insert(0, policy_nums.pop(policy_nums.index("All Gatherings Prohibited")))
+
+    policy_dict = {policy: idx for idx, policy in enumerate(policy_nums)}
+
+    # Mapping dict to dataframe to add id column for policy type
+    state_policy_df["Policy ID"] = state_policy_df[state_policy].map(policy_dict)
     return state_policy_df
   
-  
-  def get_social_distancing_dict(state_abbrev):
-    """Load most up to date social distancing policies from CSV, return a dictionary which can be passed into JS"""
-    # TODO: not sure what columns of importance we want to have JS accessible, so I kept them all...
-    results_df = DataLoader.get_social_distancing_df(state_abbrev)
-    # return the state policies in a javascript-friendly format
-    policy_dict = {
-      "reopening": results_df["Status of Reopening"].tolist(),
-      "stay_at_home": results_df["Stay at Home Order"].tolist(),
-      "mandatory_quarantine": results_df["Mandatory Quarantine for Travelers"].tolist(),
-      "non_essential_closure": results_df["Non-Essential Business Closures"].tolist(),
-      "large_gatherings": results_df["Large Gatherings Ban"].tolist(),
-      "restaurant_lim": results_df["Restaurant Limits"].tolist(),
-      "bar_closure": results_df["Bar Closures*"].tolist(),
-      "mask_mandate": results_df["Statewide Face Mask Requirement"].tolist(),
-      "emergency_declaration": results_df["Emergency Declaration"].tolist()
-    }
+  def get_state_policy_dict(state_policy_df, state_policy):
+    """Load most up to date social distancing policies from CSV, return a dictionary which can be passed into JS"""    
+    # Since we can't do categorical chloropleths easily, break dataframe up by "trace" (Policy ID)
+    policy_ids = sorted(list(np.unique(state_policy_df["Policy ID"].values)))
+
+    policy_dict = {"policy_name": state_policy}
+    for policy_id in policy_ids:
+        policy_df = state_policy_df[state_policy_df["Policy ID"] == policy_id]
+        
+        sub_policy_dict = {
+            "state": policy_df["Region"].tolist(),
+            "state_abbrev": policy_df["Abbreviation"].tolist(),
+            "policy_info": policy_df[state_policy].tolist(),
+            "policy_id": policy_df["Policy ID"].tolist(),
+        }
+        
+        policy_dict[str(policy_id)] = sub_policy_dict
+
+    # return the state policies in a javascript-friendly format by trace
     return policy_dict
 
   def get_approx_date_from_epiweek(epiweek):

@@ -77,12 +77,24 @@
     </div>
     <div class="row">
       <div class="col">
-        <div id="policy_dataviz"></div>
+        <div id="influenza_dataviz"></div>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="dropdown">
+        <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          Select State Policy Action
+        </button>
+        <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          {% for policy_name in state_policies %}
+          <a class="dropdown-item" href="?policy={{policy_name|urlencode}}">{{ policy_name }}</a>
+          {% endfor %}
+        </div>
       </div>
     </div>
     <div class="row">
       <div class="col">
-        <div id="influenza_dataviz"></div>
+        <div id="policy_dataviz"></div>
       </div>
     </div>
     <div class="row">
@@ -102,12 +114,14 @@
       var influenzaCounts = {{ influenza_counts|tojson }};  
       var nationalTotalVaccinations = {{ national_total_vax_dict|tojson }};
       var nationalDistribVaccinations = {{ national_distrib_vax_dict|tojson }};
+      var statePolicyInfo = {{ state_policy_dict|tojson }};
       
       // create the visualizations
       render_population_visualization(populations)
       render_influenza_visualization(influenzaCounts, nationalCases)
       render_total_vax_visualization(nationalTotalVaccinations)
       render_distrib_vax_visualization(nationalDistribVaccinations)
+      render_policy_visualization(statePolicyInfo)
     </script>
   </section>
 {% endblock %}
