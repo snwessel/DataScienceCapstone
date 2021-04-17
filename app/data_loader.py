@@ -55,7 +55,7 @@ class DataLoader:
 
 
   def get_daily_vaccinations_df(state_abbrev):
-    """Load daily vaccination counts from CSV, return a pandas dataframe. CSV contains data up to 3/6/2021."""
+    """Load daily vaccination counts from CSV, return a pandas dataframe. """
     vax_df = pd.read_csv('data/us_state_vaccinations.csv')
 
     # data only includes full state name not abbreviations, so adding abbreviation column based on states_dict
@@ -66,9 +66,9 @@ class DataLoader:
     state_vax_df = vax_df[vax_df["abbrev"] == state_abbrev]
     
     # get the daily total vaccinations per million
-    vaccinations_per_million = state_vax_df["daily_vaccinations_per_million"].fillna(0).cumsum()
-    state_vax_df.insert(0, "total_vaccinations_per_million", vaccinations_per_million)
-    daily_state_vax_df = state_vax_df[["date", "location", "abbrev", "total_vaccinations_per_million"]]
+    state_vax_df.rename(columns={"people_fully_vaccinated_per_hundred": "percent_vaccinated"}, inplace=True)
+    state_vax_df.fillna(method="ffill", inplace=True) # fill missing vals with last known val
+    daily_state_vax_df = state_vax_df[["date", "abbrev", "percent_vaccinated"]]
     return daily_state_vax_df
 
 
@@ -77,7 +77,7 @@ class DataLoader:
     # return the new vaccinations by date in a javascript-friendly format
     vaccinations_by_date_dict = {
       "date": daily_vaccinations_df["date"].tolist(),
-      "vaccinations": daily_vaccinations_df["total_vaccinations_per_million"].tolist()
+      "vaccinations": daily_vaccinations_df["percent_vaccinated"].tolist()
     }
     return vaccinations_by_date_dict
 
@@ -88,7 +88,7 @@ class DataLoader:
     merged_df = pd.merge(case_df, vax_df, left_on="submission_date", right_on="date", how="left")
     merged_df.fillna(0, inplace=True)
     # pull out only the values we need
-    return merged_df[["new_case", "total_vaccinations_per_million"]]
+    return merged_df[["new_case", "percent_vaccinated"]]
 
 
   def get_national_cases_df(date_bound=None):
@@ -141,7 +141,7 @@ class DataLoader:
   def get_assumed_vaccinations_dict(daily_total_vaccines_df, num_days, multiplier=1, past_days_referenced=14):
     """Generate a dictionary containing the predicted number of total vaccinations per day"""
     # use past vaccination information to make a prediction
-    vax_per_million = daily_total_vaccines_df["total_vaccinations_per_million"]
+    vax_per_million = daily_total_vaccines_df["percent_vaccinated"]
     current_total_vaccines = vax_per_million.iloc[-1]
     start_total_vaccines = vax_per_million.iloc[-past_days_referenced]
     avg_per_day = ((current_total_vaccines - start_total_vaccines) / past_days_referenced) * multiplier
@@ -214,7 +214,7 @@ class DataLoader:
 
     if include_vaccinations: 
       # add vaccination counts to the features
-      vaccinations = df["total_vaccinations_per_million"]
+      vaccinations = df["percent_vaccinated"]
       # we want the vaccination number to correspond to the last day of case counts in X
       vaccine_offset = window_size - 2
       offset_vaccinations = vaccinations[vaccine_offset:].reset_index(drop=True)
@@ -256,7 +256,7 @@ class DataLoader:
     model = pickle.loads(model_bytes)
     # assemble the set of features we'll feed in
     recent_cases = case_df["new_case"].tail(window_size-1).to_numpy().astype(int)
-    current_vaccinations = vax_df["total_vaccinations_per_million"].iloc[-1]
+    current_vaccinations = vax_df["percent_vaccinated"].iloc[-1]
     features = np.append(recent_cases, current_vaccinations)
     feature_matrix = np.atleast_2d(features)
     
