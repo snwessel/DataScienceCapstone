@@ -446,6 +446,8 @@ class DataLoader:
     """Return list of state policy actions to be loaded into a dropdown button."""
     social_dist_df = pd.read_csv("data/social_distancing_master_file.csv")
     social_dist_df.drop('Unnamed: 0', axis=1, inplace=True)
+    # Remove asterisk from Bar Closures column
+    social_dist_df.rename(columns={"Bar Closures*": "Bar Closures"}, inplace=True)
     
     return list(social_dist_df.columns)
   
@@ -465,15 +467,34 @@ class DataLoader:
     # Clean up Large Gatherings Ban column to ensure text is consistent
     state_policy_df["Large Gatherings Ban"] = state_policy_df["Large Gatherings Ban"].str.replace('>\s', '>', regex=True)
 
+    # Remove asterisk from Bar Closures column
+    state_policy_df.rename(columns={"Bar Closures*": "Bar Closures"}, inplace=True)
+
     # Remove DC since DC isn't supported by the chloropleth version we are plotting
     state_policy_df = state_policy_df[state_policy_df["Abbreviation"] != "DC"]
 
     # Mapping policy type to index to create a factor so the values can be used for visualizations
     policy_nums = list(np.unique(state_policy_df[state_policy].values))
     
-    # Moving 'All Gatherings Prohibited' to the front so it is in order of severity/restrictedness
+    # --- reordering some of the values so they are displayed in a logical order ---
+    # Large Gatherings Ban
     if state_policy == "Large Gatherings Ban":
       policy_nums.insert(0, policy_nums.pop(policy_nums.index("All Gatherings Prohibited")))
+    # Status of Reopening
+    if state_policy == "Status of Reopening":
+      policy_nums.insert(2, policy_nums.pop(policy_nums.index("Easing Restrictions")))
+    # Stay at Home Order
+    if state_policy == "Stay at Home Order":
+      policy_nums.insert(2, policy_nums.pop(policy_nums.index("Lifted")))
+    # Bar Closures
+    if state_policy == "Bar Closures":
+      policy_nums.insert(3, policy_nums.pop(policy_nums.index("Open")))
+    # Mandatory Quarantine for Travelers
+    if state_policy == "Mandatory Quarantine for Travelers":
+      policy_nums = sorted(policy_nums)
+    # Business Closures, Restaurant Limits
+    if state_policy in ["Non-Essential Business Closures", "Restaurant Limits"]:
+      policy_nums = sorted(policy_nums, reverse=True)
 
     policy_dict = {policy: idx for idx, policy in enumerate(policy_nums)}
 
