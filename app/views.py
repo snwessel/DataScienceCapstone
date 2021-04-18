@@ -42,7 +42,7 @@ def index():
   # -- influenza viz
   influenza_df = DataLoader.get_influenza_counts_df()
   influenza_dict = DataLoader.get_influenza_counts_dict(influenza_df)
-  national_cases_df = DataLoader.get_national_cases_df('2021-01-01')
+  national_cases_df = DataLoader.get_national_cases_df()
   national_cases_dict = DataLoader.get_national_cases_dict(national_cases_df)
   # -- total vax viz
   national_total_vax_df = DataLoader.get_total_vaccinations_per_hundred_df()

@@ -31,7 +31,7 @@ function render_influenza_visualization(influenzaData, nationalCases) {
     var data = [fluData, caseData];
   
     var layout = { 
-      title: 'Number of 2020 FluView Influenza-like Illnesses vs Number of 2020 National COVID-19 Cases',
+      title: 'Number FluView Influenza-like Illnesses vs Number of National COVID-19 Cases',
       paper_bgcolor: '#fafaee',
     };
     

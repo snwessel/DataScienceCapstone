@@ -502,8 +502,40 @@ class DataLoader:
     # return the state policies in a javascript-friendly format by trace
     return policy_dict
 
+  def get_first_epiweek_date(year=None):
+    """Calculates date of the first epiweek of the year and returns a datetime object. According to the CDC, this is the first Sunday of the year that includes January 4th in the week."""
+    # Used as a reference: https://pypi.org/project/epiweeks/
+    
+    # Get current year
+    if year is None:
+        today_obj = datetime.today()
+        year = today_obj.year
+    
+    # Create year start object
+    year_start_str = str(year) + "-01-01"
+    year_start_obj = datetime.strptime(year_start_str, "%Y-%m-%d")
+    
+    # create January 4th object
+    jan_4_str = str(year) + "-01-04"
+    jan_4_obj = datetime.strptime(jan_4_str, "%Y-%m-%d")
+    
+    # Days of the week: Monday = 0, ..., Sunday = 6
+    # midweek in CDC standard is therefore 2, or Wednesday 
+    midweek = 2
+    
+    # subtracting 1 due to CDC epiweek standards
+    week1_start_ordinal = year_start_obj.toordinal() - year_start_obj.weekday() - 1
+    
+    if year_start_obj.weekday() > midweek:
+        week1_start_ordinal += 7
+        
+    # convert ordinal to datetime
+    week1_start_date = datetime.fromordinal(week1_start_ordinal)
+    
+    return week1_start_date
+  
   def get_approx_date_from_epiweek(epiweek):
-    """Calculates approximate date based on epiweek. Epiweek formatted YYYYWW, with WW meaning week between 01-53."""
+    """Calculates approximate date based on epiweek, returns the latest day (Saturday) in the epiweek. Epiweek formatted YYYYWW, with WW meaning week between 01-53."""
     year = int(str(epiweek)[:4])
     week = int(str(epiweek)[4:])
 
@@ -511,17 +543,58 @@ class DataLoader:
       days = (1 + (week - 1) * 7)
     else:
       days = week * 7
-    
-    new_date = datetime(year, 1, 1)
-    new_date = new_date + timedelta(days=days - 1)
+
+    # get date of first epiweek of year
+    first_epiweek_obj = DataLoader.get_first_epiweek_date(year)
+    new_date = first_epiweek_obj + timedelta(days=days - 1)
 
     # Format it as a string to match COVID date formatting
     return new_date.strftime("%Y-%m-%d")
 
+  def get_approx_epiweek_from_date(date_str):
+    """Calculates approximate epiweek based on date formatted YYYY-mm-dd. Epiweek formatted YYYYWW, with WW meaning week between 01-53."""
+    # creating date object from latest date string
+    date_obj = datetime.strptime(date_str, "%Y-%m-%d")    
+    year = date_obj.year
+    month = date_obj.month
+    day = date_obj.day
+    
+    # calculate date of first epiweek Sunday
+    first_epiweek_obj = DataLoader.get_first_epiweek_date(year)
+    
+    # calculating delta between two dates
+    delta = date_obj - first_epiweek_obj
+    week = delta.days // 7
+    
+    # determining the correct week we are in (either current year or previous)
+    if delta.days < 0:
+        year -= 1
+        year_start_str = DataLoader.get_first_epiweek_date(year)
+        year_start_obj = datetime.strptime(year_start_str, "%Y-%m-%d")
+        week = (date_obj - year_start_obj).days // 7
+    elif week >= 52:
+        year_start_str = DataLoader.get_first_epiweek_date(year + 1)
+        year_start_obj = datetime.strptime(year_start_str, "%Y-%m-%d")
+        if date_obj >= year_start_obj:
+            year += 1
+            week = 0
+    
+    week += 1
+        
+    # formatting epiweek as a string, returning as int to be used for query
+    epiweek_str = str(year) + str(week).zfill(2)
+
+    return int(epiweek_str)
+
   def get_influenza_counts_df():
     """Load influenza counts from the CMU Delphi API, return a pandas dataframe"""
+    # Retrieves current date, formats it "YYYY-mm-dd", and converts it to epiweek
+    today_obj = datetime.today()
+    today_str = today_obj.strftime("%Y-%m-%d")
+    epiweek = DataLoader.get_approx_epiweek_from_date(today_str)
+
     # Retrieves national fluview data for each "epiweek" from 2020:
-    results = Epidata.fluview(["nat"], [Epidata.range(202001, 202053)])
+    results = Epidata.fluview(["nat"], [Epidata.range(202001, epiweek)])
     results_df = pd.DataFrame.from_records(results["epidata"]).sort_values(by=["epiweek"])
     results_df = results_df[["epiweek", "lag", "num_ili", "num_patients", "num_providers", "wili", "ili"]]
 
