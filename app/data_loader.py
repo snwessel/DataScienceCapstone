@@ -66,9 +66,9 @@ class DataLoader:
     state_vax_df = vax_df[vax_df["abbrev"] == state_abbrev]
     
     # get the daily total vaccinations per million
-    state_vax_df.rename(columns={"people_fully_vaccinated_per_hundred": "percent_vaccinated"}, inplace=True)
-    state_vax_df.fillna(method="ffill", inplace=True) # fill missing vals with last known val
-    daily_state_vax_df = state_vax_df[["date", "abbrev", "percent_vaccinated"]]
+    renamed_state_vax_df = state_vax_df.rename(columns={"people_fully_vaccinated_per_hundred": "percent_vaccinated"})
+    filled_state_vax_df = renamed_state_vax_df.fillna(method="ffill") # fill missing vals with last known val
+    daily_state_vax_df = filled_state_vax_df[["date", "abbrev", "percent_vaccinated"]]
     return daily_state_vax_df
 
 
@@ -229,10 +229,10 @@ class DataLoader:
     X = pd.DataFrame()
     y = pd.Series()
     for state_name, state_abbrev in states.items():
-      # print("Getting data for", state_name)
-      state_X, state_y = DataLoader.get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations, holdout_days)
-      X = X.append(state_X)
-      y = y.append(state_y)
+      if state_abbrev != "US":
+        state_X, state_y = DataLoader.get_state_windowed_training_data(window_size, state_abbrev, include_vaccinations, holdout_days)
+        X = X.append(state_X)
+        y = y.append(state_y)
     return X, y
 
   def get_date_separated_testing_data(window_size, num_test_days):
