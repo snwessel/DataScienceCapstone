@@ -20,32 +20,33 @@ model.train(X_train, y_train)
 states = DataLoader.get_states()
 all_errors = np.empty((0, num_days))
 for state_name, state_abbrev in states.items():
-  # get the multi-day predictions 
-  case_df = DataLoader.get_daily_cases_df(state_abbrev)[:-num_days]
-  vax_df = DataLoader.get_daily_vaccinations_df(state_abbrev)[:-num_days]
-  future_vaccinations = DataLoader.get_assumed_vaccinations_dict(vax_df, num_days, multiplier=1)
-  predictions_dict = DataLoader.get_predictions(
-    case_df,
-    vax_df,
-    future_vaccinations["vaccinations"], 
-    window_size, 
-    num_days)
-  predictions = predictions_dict["predictions"]
+  if state_abbrev != "US":
+    # get the multi-day predictions 
+    case_df = DataLoader.get_daily_cases_df(state_abbrev)[:-num_days]
+    vax_df = DataLoader.get_daily_vaccinations_df(state_abbrev)[:-num_days]
+    future_vaccinations = DataLoader.get_assumed_vaccinations_dict(vax_df, num_days, multiplier=1)
+    predictions_dict = DataLoader.get_predictions(
+      case_df,
+      vax_df,
+      future_vaccinations["vaccinations"], 
+      window_size, 
+      num_days)
+    predictions = predictions_dict["predictions"]
 
-  # get the actual case counts 
-  cases_df = DataLoader.get_daily_cases_df(state_abbrev)[-num_days:] # get the last n cases
-  y_test = cases_df["new_case"].tolist()
+    # get the actual case counts 
+    cases_df = DataLoader.get_daily_cases_df(state_abbrev)[-num_days:] # get the last n cases
+    y_test = cases_df["new_case"].tolist()
 
-  # compare the predicted to the actual
-  errors = []
-  for day in range(num_days):
-    error = predictions[day] - y_test[day]
-    errors.append(int(error))
-  all_errors = np.append(all_errors, np.array([errors]), axis=0)
-  # mse = mean_squared_error(y_test, predictions)
-  # print("Errors in", state_abbrev, "are:", errors)
-  # print("MSE in", state_name, "is:", mse)
-  # print("R^2 in", state_name, "is", r2_score(y_test, predictions))
+    # compare the predicted to the actual
+    errors = []
+    for day in range(num_days):
+      error = predictions[day] - y_test[day]
+      errors.append(int(error))
+    all_errors = np.append(all_errors, np.array([errors]), axis=0)
+    # mse = mean_squared_error(y_test, predictions)
+    # print("Errors in", state_abbrev, "are:", errors)
+    # print("MSE in", state_name, "is:", mse)
+    # print("R^2 in", state_name, "is", r2_score(y_test, predictions))
 
 all_errors = np.absolute(all_errors)
 print("All Errors shape:", all_errors.shape)

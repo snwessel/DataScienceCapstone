@@ -57,9 +57,9 @@ class WindowBasedModel():
 
 
 class MultiLayerPerceptron(WindowBasedModel):
-  def __init__(self):
+  def __init__(self, params=None):
     """Initialize the hyperparameters to what we have found to perform the best in the past."""
-    self.best_params = {"activation": "relu", "solver": "lbfgs", "hidden_layer_sizes": (100,)}
+    self.best_params = {'activation': 'relu', 'hidden_layer_sizes': (200,), 'solver': 'lbfgs'}
     self.model = None
     self.model_name = "Multi-Layer Perceptron"
 
@@ -75,7 +75,7 @@ class MultiLayerPerceptron(WindowBasedModel):
     grid = GridSearchCV(MLPRegressor(), param_grid, cv=TimeSeriesSplit())
     search_results = grid.fit(train_test_data.X_train, train_test_data.y_train)
     self.best_params = search_results.best_params_
-    print("MLP Cross validation took", time.perf_counter() - start_time, "seconds.")
+    print("\tMLP Cross validation took", time.perf_counter() - start_time, "seconds.")
     return self.best_params
 
   def train(self, X_train, y_train, save_model=False):
@@ -92,7 +92,7 @@ class MultiLayerPerceptron(WindowBasedModel):
 class LinearRegression(WindowBasedModel):
   def __init__(self):
     """Initialize the hyperparameters to what we have found to perform the best in the past."""
-    self.best_params = {'copy_X': True, 'fit_intercept': True, 'n_jobs': None, 'normalize': False}
+    self.best_params = {'copy_X': True, 'fit_intercept': True, 'normalize': True}
     self.model = None
     self.model_name = "Linear Regression"
 
@@ -147,6 +147,7 @@ class RidgeRegression(WindowBasedModel):
     if save_model:
       print("Saving ridge regression model")
       save_trained_model(self.model)
+
 
 class LassoRegression(WindowBasedModel):
   def __init__(self):

@@ -68,7 +68,7 @@ def train_test_ridge_regression(train_test_data, show_plot=False, save_model=Fal
   
 
 def train_test_lasso(train_test_data, show_plot=False, save_model=False):
-  model = models.RidgeRegression()
+  model = models.LassoRegression()
   best_params = model.get_best_params(train_test_data)
   model.train(train_test_data.X_train, train_test_data.y_train, save_model=save_model)
   model.display_metrics(train_test_data, show_plot=show_plot, selected_params=best_params)
@@ -92,7 +92,7 @@ def train_test_control(windowed_data):
 
 ### Performance Analysis ###
 display_graphs = False
-window_sizes = [8, 12, 16, 20, 24, 32]
+window_sizes = [20, 24, 32]
 
 for window_size in window_sizes:
   print("\nEvaluating models on window_size", window_size, "\n----------")
@@ -100,6 +100,6 @@ for window_size in window_sizes:
 
   train_test_MLP(windowed_data, display_graphs)
   train_test_linear_regression(windowed_data, display_graphs)
-  # train_test_ridge_regression(windowed_data, display_graphs)
-  # train_test_lasso(windowed_data, display_graphs)
-  # train_test_control(windowed_data)
+  train_test_ridge_regression(windowed_data, display_graphs)
+  train_test_lasso(windowed_data, display_graphs)
+  train_test_control(windowed_data)
