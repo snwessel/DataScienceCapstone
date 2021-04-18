@@ -73,6 +73,7 @@ def index():
                           influenza_counts=influenza_dict,
                           national_total_vax_dict=national_total_vax_dict,
                           national_distrib_vax_dict=national_distrib_vax_dict,
+                          policy=policy,
                           state_policies=state_policies,
                           state_policy_dict=state_policy_dict,
                           predictions=predictions, 

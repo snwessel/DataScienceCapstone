@@ -2,9 +2,7 @@
 
 {% block content %}
   <h3>COVID Vaccination Data Exploration</h3>
-  <!-- general description of project -->
   <!-- could add little picture or something? -->
-  <!-- add footer with github link and made with love by us in year or something -->
   <p>
     This project aims to explore data surrounding COVID cases and vaccinations in the United States. 
     Below, we have created a dashboard that will allow users to explore predicted outcomes based on changes 
@@ -87,9 +85,10 @@
     <div class="row">
       <div class="col">
         <p>
-          --in progress-- 
-          -> filter out demographics by doing (click (or 2??)) 
-          -> i guess just in general whatever else goes on viz
+          Demographics can be filtered and isolated by double clicking the name of the demographic on the legend on the right.
+          After isolating one, you can include others by clicking once on the name.
+          <br><br>
+          To reset, double click anywhere on the legend to display all demographics again.
         </p>
         <div id="population_dataviz"></div>
       </div>
@@ -98,18 +97,21 @@
       <div class="col">
         <br><br>
         <p>
-          --in progress-- 
-          -> flu season (when peak is) ((showing on chart could be cool too?))
-          -> pointing out that there wasn't a spike in december that would have been expected
+          Peak flu activity according to the CDC is highlighted on the chart below in red. Typically, the flu virus is most common during 
+          the fall and winter, and peaks from December to February. 
+          <span class="font-italic">Source: <a href="https://www.cdc.gov/flu/about/season/flu-season.htm" target="_blank">The Flu Season (CDC)</a></span>
+          <br><br>
+          We can see below there isn't much of a spike in influenza-like illnesses as would be expected between December 2020 to February 2021, unlike the flu season 
+          peak visible from January 2020 through mid-March 2020. Instead, we see a peak of COVID-19 cases.
         </p>
         <div id="influenza_dataviz"></div>
       </div>
     </div>
     <div class="col-auto">
       <p>
-        --in progress-- 
-        -> Showing data for *bolded state policy*
-        -> select that to chose other as well!!!!!!!!!
+        Showing data for the <b>{{ policy }}</b> state policy action.
+        <br><br>
+        Click the dropdown to select a different state policy action.
       </p>
       <div class="dropdown">
         <button class="btn btn-info dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -130,7 +132,7 @@
     <div class="row">
       <div class="col">
         <p>
-          --in progress-- (if anything i think of to write?)
+          --in progress-- (if anything we think of to write?)
         </p>
         <div id="total_vax_dataviz"></div>
       </div>
@@ -138,7 +140,7 @@
     <div class="row">
       <div class="col">
         <p>
-          --in progress-- (if anything i think of to write?)
+          --in progress-- (if anything we think of to write?)
         </p>
         <div id="distrib_vax_dataviz"></div>
       </div>
