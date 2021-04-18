@@ -340,45 +340,108 @@ class DataLoader:
 
   ## Exploratory Datasets ##
 
-  # NOTE: not fixed/re-implemented yet
-  def get_state_population_counts_df():
-    """Load state population estimate counts from the Census Bureau API, return a pandas dataframe"""
-    # TODO: Clean up request URL, probably don't need it in multiple parts
-    host="https://api.census.gov/data"
-    year="2019"
-    dataset="pep/charagegroups"
-    base_url="/".join([host, year, dataset])
+  def get_states_fips_data():
+    """Load state abbreviations and Census/FIPS codes from file, return a dictionary mapping state abbreviation to Census code"""
+    # states will be stored in a dict 
+    # with the abbreviation as the key and the Census code as the value
+    fips_data = pd.read_csv('data/state_fips_codes.txt', sep="|")
+    fips_data.drop("STATENS", axis=1, inplace=True)
+    columns = ["state_num", "state_abbrev", "state_name"]
+    fips_data.columns = columns
+ 
+    state_abbrev_list = list(fips_data["state_abbrev"].values)[:51]
+    state_num_list = list(fips_data["state_num"].values)[:51]
+    padded_state_num_list = [str(x).zfill(2) for x in state_num_list]
+    
+    # Add US option when querying Census API
+    state_abbrev_list.append("US")
+    padded_state_num_list.append("*")
+ 
+    numbered_states_dict = dict(zip(state_abbrev_list, padded_state_num_list))
+    return numbered_states_dict
 
-    predicates = {}
-    get_vars = ["NAME", "POP"]
-    predicates["get"] = ",".join(get_vars)
-    # Change to integer padded w/ space to get a specific state
-    predicates["for"] = "state:*"
-    results = requests.get(base_url, params=predicates)
+  def get_state_demographic_population_counts_df(state_abbrev):
+      """Load population estimate counts for a single state based on demographic group from the Census Bureau API, return a pandas dataframe"""
+      host="https://api.census.gov/data"
+      year="2019"
+      dataset="pep/charagegroups"
+      base_url="/".join([host, year, dataset])
 
-    # TODO: fix error catching/how that relays into the frontend
-    try:
-      results.raise_for_status()
-    except requests.exceptions.HTTPError as e:
-        # Not 200
-        return "Error: " + str(e)
+      # get mapping of state abbreviation to fips ID
+      numbered_states_dict = DataLoader.get_states_fips_data()
 
-    cols = ["state_name", "state_pop", "state_abbrev"]
-    census_df = pd.DataFrame(columns=cols, data=results.json()[1:]).sort_values(by=['state_name'])
+      predicates = {}
+      # RACE, SEX, HISP
+      get_vars = ["NAME", "POP", "RACE"]
+      predicates["get"] = ",".join(get_vars)
+      # Change to integer padded w/ space to get a specific state
+      predicates["for"] = "state:" + numbered_states_dict[state_abbrev]
+      # API key
+      predicates["key"] = "5909ef2cf4e6005aaf06457931ea4e7c53ac0025"
+      results = requests.get(base_url, params=predicates)
 
-    return census_df
+      # TODO: fix error catching/how that relays into the frontend?
+      try:
+          results.raise_for_status()
+      except requests.exceptions.HTTPError as e:
+          # Not 200
+          return "Error: " + str(e)
 
-  # NOTE: not fixed/re-implemented yet
-  def get_state_population_counts_dict():
-    """Load state population estimate counts from the Census Bureau API, return a dictionary which can be passed into JS"""
-    results_df = DataLoader.get_state_population_counts_df()
-    # return the new population coutns in a javascript-friendly format
-    state_pop_dict = {
-      "state": results_df["state_name"].tolist(),
-      "population": results_df["state_pop"].tolist()
+      cols = ["state_name", "state_pop", "race_id", "state_id"]
+      census_df = pd.DataFrame(columns=cols, data=results.json()[1:])
+      census_df["race_id"] = census_df["race_id"].astype(int)
+      
+      # Mapping race_id to race based on Census classification
+      race_df = pd.read_csv("data/census_race_classification.csv")
+      merged_census_df = pd.merge(census_df, race_df)
+
+      return merged_census_df
+
+  def get_state_demographic_population_counts_dict(state_demographic_df, state_abbrev):
+      """Load population estimate counts for a single state based on demographic group from the Census Bureau API, return a dictionary which can be passed into JS"""
+      demographic_ids = sorted(list(np.unique(state_demographic_df["race_id"].values)))
+
+      state_demographic_dict = {"state_abbrev": state_abbrev}
+      for demographic_id in demographic_ids:
+          demographic_df = state_demographic_df[state_demographic_df["race_id"] == demographic_id]
+          demographic_df.sort_values(by="state_name", inplace=True)
+          
+          demographic_dict = {
+              "state": demographic_df["state_name"].tolist(),
+              "population": demographic_df["state_pop"].tolist(),
+              "race": demographic_df["race"].tolist()
+          }
+          
+          state_demographic_dict[str(demographic_id)] = demographic_dict
+
+      # return the state demographic makeup in a javascript-friendly format by trace
+      return state_demographic_dict
+
+  def get_covid_total_cases_and_deaths_df(state_abbrev):
+    """Load total statewide COVID cases and deaths from the CDC API, clean data, return a pandas dataframe."""
+    # Query the CDC API
+    client = Socrata("data.cdc.gov", "qt5QX390BTNWFZ6O36g3oO6Fq")
+    results = client.get("9mfq-cb36", state=state_abbrev)
+    results_df = pd.DataFrame.from_records(results).sort_values(by=["submission_date"], ascending=False)
+
+    # update the date formatting
+    trimmed_df = results_df.replace(r'T\d{2}:\d{2}:\d{2}.\d{3}', '', regex=True)
+    
+    # return only most recent information (last day, since cumulative data)
+    filtered_df = trimmed_df.drop(trimmed_df.index[1:]).reset_index()
+    
+    return filtered_df[["submission_date", "tot_cases", "tot_death"]]
+
+  def get_covid_total_cases_and_deaths_dict(total_cases_death_df):
+    """Load total statewide COVID case and death counts from the CDC API, return a dictionary which can be passed into JS"""
+    # return the total death and case count in a javascript-friendly format
+    total_cases_and_deaths_dict = {
+      "cases": total_cases_death_df["tot_cases"].tolist(),
+      "deaths": total_cases_death_df["tot_death"].tolist(),
+      "date": total_cases_death_df["submission_date"].tolist()
     }
-    return state_pop_dict
-
+    return total_cases_and_deaths_dict
+    
   def get_state_policy_actions():
     """Return list of state policy actions to be loaded into a dropdown button."""
     social_dist_df = pd.read_csv("data/social_distancing_master_file.csv")
