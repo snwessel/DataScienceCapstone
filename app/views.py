@@ -57,7 +57,7 @@ def index():
 
   # get predictions
   predictions = DataLoader.get_predictions(daily_cases_df, daily_vaccinations_df, future_vaccinations["vaccinations"], window_size, num_to_predict)
-  bounds = DataLoader.get_future_case_bounds(predictions, daily_cases_df.shape[0])
+  bounds = DataLoader.get_future_case_bounds(predictions, daily_cases_df.shape[0], return_empty=(state == "US"))
   
   # render the HTML template
   return render_template('index.html', 

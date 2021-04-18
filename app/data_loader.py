@@ -282,13 +282,16 @@ class DataLoader:
     return predictions_dict
 
     
-  def get_future_case_bounds(predictions_dict, num_prev_days):
+  def get_future_case_bounds(predictions_dict, num_prev_days, return_empty=False):
     # TODO: get these numbers for a larger number of days, then only index the ones we need
-    mean_error = [ 31.1, 50.04, 73.06, 96.08, 125.56, 155.66, 178.68, 207.84, 224.58, 238.64,
-      272.02, 266.2, 294.96, 290.06, 295.74, 304.4, 335.04, 342.08, 387.62, 391.18, 417.88] # observed mean error for the 21 predicted days
-    predictions = np.array(predictions_dict["predictions"])
-    upper = predictions+mean_error
-    lower = predictions-mean_error
+    upper = np.empty(0)
+    lower = np.empty(0)
+    if not return_empty:
+      mean_error = [ 31.1, 50.04, 73.06, 96.08, 125.56, 155.66, 178.68, 207.84, 224.58, 238.64,
+        272.02, 266.2, 294.96, 290.06, 295.74, 304.4, 335.04, 342.08, 387.62, 391.18, 417.88] # observed mean error for the 21 predicted days
+      predictions = np.array(predictions_dict["predictions"])
+      upper = predictions+mean_error
+      lower = predictions-mean_error
     return {
       "upper": upper.tolist(),
       "lower": lower.tolist()
