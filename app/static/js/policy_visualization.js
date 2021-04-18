@@ -2,7 +2,7 @@
 function render_policy_visualization(statePolicyInfo) {
 
     // TODO: potential dynamic colorscale would be better, though our data never has more than 6 options currently
-    const colors = ["rgb(255, 218, 244)", "rgb(238, 182, 219)", "rgb(222, 146, 193)", "rgb(205, 109, 167)", "rgb(188, 70, 140)", "rgb(170, 5, 112)"];
+    const colors = ["#DCE862", "#75E697", "#30D4D1", "#82B5E4", "#C98EC1", "#DC7280"];
 
     var data = [];
     let policy;
