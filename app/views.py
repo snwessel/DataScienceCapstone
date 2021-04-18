@@ -30,11 +30,19 @@ def index():
   future_vaccinations = DataLoader.get_assumed_vaccinations_dict(daily_vaccinations_df, num_to_predict, multiplier=multiplier)
   
   # get exploratory data
-  state_population_dict = DataLoader.get_state_population_counts_dict()
+  # -- population viz
+  state_demographic_df = DataLoader.get_state_demographic_population_counts_df(state)
+  state_demographic_dict = DataLoader.get_state_demographic_population_counts_dict(state_demographic_df, state)
+  # ---- retrieving covid data to display on population viz only if we are looking at a specific state
+  if state != "US":
+    total_cases_and_deaths_df = DataLoader.get_covid_total_cases_and_deaths_df(state)
+    total_cases_and_deaths_dict = DataLoader.get_covid_total_cases_and_deaths_dict(total_cases_and_deaths_df)
+  else:
+    total_cases_and_deaths_dict = None
   # -- influenza viz
   influenza_df = DataLoader.get_influenza_counts_df()
   influenza_dict = DataLoader.get_influenza_counts_dict(influenza_df)
-  national_cases_df = DataLoader.get_national_cases_df('2021-01-01')
+  national_cases_df = DataLoader.get_national_cases_df()
   national_cases_dict = DataLoader.get_national_cases_dict(national_cases_df)
   # -- total vax viz
   national_total_vax_df = DataLoader.get_total_vaccinations_per_hundred_df()
@@ -59,7 +67,8 @@ def index():
                           daily_cases=daily_cases_dict, 
                           daily_vaccinations=daily_vaccinations_dict,
                           future_vaccinations=future_vaccinations,
-                          state_pop=state_population_dict,
+                          state_demographic_dict=state_demographic_dict,
+                          total_cases_and_deaths_dict=total_cases_and_deaths_dict,
                           national_cases_dict=national_cases_dict,
                           influenza_counts=influenza_dict,
                           national_total_vax_dict=national_total_vax_dict,

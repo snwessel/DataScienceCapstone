@@ -1,38 +1,69 @@
 
-function render_population_visualization(populations) {
-    var popData ={
-      x: populations['state'],
-      y: populations['population'],
-      type: 'scatter',
-      mode: 'lines',
-      line: {
-        dash: 'solid'
-      },
-      name: 'actual'
+function render_population_visualization(demographicInfo, casesAndDeaths) {
+
+    var data = [];
+    let demographic;
+    let demographicDict;
+
+    var num = Object.keys(demographicInfo).length;
+    // starting from 1 because demographic keys go from 1-6
+    for (var i = 1; i < num; i++) {
+        demographic = i.toString();
+        let demographicName = demographicInfo[demographic]["race"][0];
+        // replace every fourth space with break <br> to wrap name in legend
+        // help from: https://stackoverflow.com/questions/51097042/how-to-find-and-replace-every-nth-character-occurrence-using-regex
+        demographicName = demographicName.replace(/((?:[^\s]*\s){3}[^\s]*)\s/g, '$1<br>');
+        
+        demographicDict = {
+            x: demographicInfo[demographic]["state"],
+            y: demographicInfo[demographic]["population"],
+            name: demographicName,
+            type: 'bar',
+        };
+        
+        // making width of bar shorter for when we are only viewing one state
+        if (demographicInfo["state_abbrev"] !== "US") {
+          demographicDict["width"] = 0.1;
+        };
+
+        data.push(demographicDict);
     };
-  
-    // fake temporary data to play around with
-    // var futureData = {
-    //   x: ['2021-03-07', '2021-03-08', '2021-03-09', '2021-03-10', '2021-03-11', '2021-03-12', '2021-03-13', '2021-03-14', 
-    //   '2021-03-15', '2021-03-16', '2021-03-17', '2021-03-18', '2021-03-19', '2021-03-20', '2021-03-21', '2021-03-22', '2021-03-23'],
-    //   y: ['0', '1000', '2000', '3000', '4000', '5000', '6000', '7000', '8000', '9000', '10000', '11000', '12000', '13000', '14000', '15000', '16000'],
-    //   type: 'scatter',
-    //   mode: 'lines',
-    //   line: {
-    //     dash: 'dot'
-    //   },
-    //   name: 'predicted'
-    // };
-  
-    // list of all data series/"traces" 
-    var data = [popData];
+
+    // dynamically renaming chart if only a state is selected
+    var suffix = (demographicInfo["state_abbrev"] !== "US") ? `<br>vs Total Cases and Deaths for ${demographicInfo[demographic]["state"][0]}` : ""
   
     var layout = { 
-      title: '2019 U.S. Population Estimates',
-      paper_bgcolor: '#fafaee'
+      title: `2019 U.S. Population Estimates by Demographic Breakdown${suffix}`,
+      paper_bgcolor: '#fafaee',
+      barmode: 'stack'
     };
     
     var config = {responsive: true};
   
     Plotly.newPlot('population_dataviz', data, layout, config);
+
+    // adding extra bar plots when looking at an individual state to compare more information
+    if (demographicInfo["state_abbrev"] !== "US" && casesAndDeaths !== null) {
+
+      let deathDict = {
+        x: ["Total Deaths"],
+        y: casesAndDeaths["deaths"],
+        name: "Total Deaths",
+        type: 'bar',
+        width: 0.1
+      };
+
+      let caseDict = {
+        x: ["Total Cases"],
+        y: casesAndDeaths["cases"],
+        name: "Total Cases",
+        type: 'bar',
+        width: 0.1
+      };
+
+      let covidData = [deathDict, caseDict];
+
+      Plotly.addTraces('population_dataviz', covidData);
+    };
+
   }
