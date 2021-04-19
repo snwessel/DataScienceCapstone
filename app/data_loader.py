@@ -287,8 +287,11 @@ class DataLoader:
     upper = np.empty(0)
     lower = np.empty(0)
     if not return_empty:
-      mean_error = [ 31.1, 50.04, 73.06, 96.08, 125.56, 155.66, 178.68, 207.84, 224.58, 238.64,
-        272.02, 266.2, 294.96, 290.06, 295.74, 304.4, 335.04, 342.08, 387.62, 391.18, 417.88] # observed mean error for the 21 predicted days
+      mean_error = [ 33.45098039, 59.62745098, 77.35294118, 96.45098039, 124.11764706,
+        140.31372549, 168.64705882, 178.39215686, 188.29411765, 217.29411765,
+        235.60784314, 276.70588235, 309.78431373, 330.15686275, 362.74509804,
+        359.41176471, 397.56862745, 414.45098039, 418.58823529, 438.07843137,
+        440.15686275] # observed mean error for the 32 predicted days
       predictions = np.array(predictions_dict["predictions"])
       upper = predictions+mean_error
       lower = predictions-mean_error

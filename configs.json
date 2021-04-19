@@ -1,4 +1,4 @@
 { 
-  "window_size": 20,
+  "window_size": 32,
   "num_predicted_days": 21 
 }
