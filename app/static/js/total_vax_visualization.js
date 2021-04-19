@@ -11,7 +11,7 @@ function render_total_vax_visualization(nationalTotalVaccinations) {
       reversescale: true,
       autocolorscale: false,
       colorbar: {
-        title: 'Total Vaccinations per Hundred'
+        title: 'Total Vaccinations<br>per Hundred'
       }
     };
   

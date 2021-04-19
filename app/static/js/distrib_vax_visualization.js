@@ -10,7 +10,7 @@ function render_distrib_vax_visualization(nationalDistribVaccinations) {
       colorscale: 'Reds',
       autocolorscale: false,
       colorbar: {
-        title: 'Distributed Vaccinations per Hundred'
+        title: 'Distributed Vaccinations<br>per Hundred'
       }
     };
   
