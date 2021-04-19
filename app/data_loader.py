@@ -409,8 +409,8 @@ class DataLoader:
 
       state_demographic_dict = {"state_abbrev": state_abbrev}
       for demographic_id in demographic_ids:
-          demographic_df = state_demographic_df[state_demographic_df["race_id"] == demographic_id]
-          demographic_df.sort_values(by="state_name", inplace=True)
+          unsorted_demographic_df = state_demographic_df[state_demographic_df["race_id"] == demographic_id]
+          demographic_df = unsorted_demographic_df.sort_values(by="state_name")
           
           demographic_dict = {
               "state": demographic_df["state_name"].tolist(),
