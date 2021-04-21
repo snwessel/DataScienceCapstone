@@ -2,7 +2,7 @@
 
 This project aims to explore data surrounding COVID cases and vaccinations in the United States. Our primary deliverable takes the form of a webapp, where users will be able to explore data visualizations and interact with our predictive model. 
 
-Our website should be online soon!
+[View our website here!](https://capstone-covid-predictions.herokuapp.com) 
 
 _Created with love by Sarah Wessel and Olivia Petrillo._
 
@@ -29,6 +29,3 @@ Generate a new requirements file by running the following (with your own file pa
 pip install pipreqs
 pipreqs \Users\...\DataScienceCapstone\app
 ```
-
-## Things we need to look into
-Why South Carolina doesn't have any data from the CDC (temporarily removed from our list of states as a fix)
