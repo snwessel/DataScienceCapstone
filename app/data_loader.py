@@ -485,16 +485,16 @@ class DataLoader:
     
     # --- reordering some of the values so they are displayed in a logical order ---
     # Large Gatherings Ban
-    if state_policy == "Large Gatherings Ban":
+    if state_policy == "Large Gatherings Ban" and "All Gatherings Prohibited" in policy_nums:
       policy_nums.insert(0, policy_nums.pop(policy_nums.index("All Gatherings Prohibited")))
     # Status of Reopening
-    if state_policy == "Status of Reopening":
-      policy_nums.insert(2, policy_nums.pop(policy_nums.index("Easing Restrictions")))
+    if state_policy == "Status of Reopening" and "Easing Restrictions" in policy_nums:
+      policy_nums.insert(1, policy_nums.pop(policy_nums.index("Easing Restrictions")))
     # Stay at Home Order
-    if state_policy == "Stay at Home Order":
+    if state_policy == "Stay at Home Order" and "Lifted" in policy_nums:
       policy_nums.insert(2, policy_nums.pop(policy_nums.index("Lifted")))
     # Bar Closures
-    if state_policy == "Bar Closures":
+    if state_policy == "Bar Closures" and "Open" in policy_nums:
       policy_nums.insert(3, policy_nums.pop(policy_nums.index("Open")))
     # Mandatory Quarantine for Travelers
     if state_policy == "Mandatory Quarantine for Travelers":

@@ -18,7 +18,7 @@ function render_total_vax_visualization(nationalTotalVaccinations) {
     var data = [vaxData];
   
     var layout = { 
-      title: `Total Number of Doses Administered <br> per 100 People in the Total Population of Each State (as of ${nationalTotalVaccinations["date"][0]})`,
+      title: `Total Number of COVID-19 Vaccine Doses Administered <br> per 100 People in the Total Population of Each State (as of ${nationalTotalVaccinations["date"][0]})`,
       paper_bgcolor: '#fafaee',
       geo: {
         scope: 'usa',

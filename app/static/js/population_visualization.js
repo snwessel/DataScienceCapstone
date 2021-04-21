@@ -30,7 +30,7 @@ function render_population_visualization(demographicInfo, casesAndDeaths) {
     };
 
     // dynamically renaming chart if only a state is selected
-    var suffix = (demographicInfo["state_abbrev"] !== "US") ? `<br>vs Total Cases and Deaths for ${demographicInfo[demographic]["state"][0]}` : ""
+    var suffix = (demographicInfo["state_abbrev"] !== "US") ? ` vs<br>Total COVID-19 Cases and Deaths for ${demographicInfo[demographic]["state"][0]} (as of ${casesAndDeaths["date"]})` : ""
   
     var layout = { 
       title: `2019 U.S. Population Estimates by Demographic Breakdown${suffix}`,
