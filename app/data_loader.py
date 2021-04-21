@@ -248,11 +248,12 @@ class DataLoader:
 
   ## Using the Trained Model ## 
 
-  def get_predictions(case_df, vax_df, future_vaccinations_list, window_size, num_days):
+  def get_predictions(case_df, vax_df, future_vaccinations_list, window_size, num_days, model=None):
     """Use the trained model to iteratively get predictions for future days."""
     # load the model
-    model_bytes = pickle.load(open("data/trained_model.p", "rb"))
-    model = pickle.loads(model_bytes)
+    if model is None:
+      model_bytes = pickle.load(open("data/trained_model.p", "rb"))
+      model = pickle.loads(model_bytes)
     # assemble the set of features we'll feed in
     recent_cases = case_df["new_case"].tail(window_size-1).to_numpy().astype(int)
     current_vaccinations = vax_df["percent_vaccinated"].iloc[-1]

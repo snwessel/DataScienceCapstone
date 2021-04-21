@@ -33,7 +33,8 @@ for state_name, state_abbrev in states.items():
       vax_df,
       future_vaccinations["vaccinations"], 
       window_size, 
-      num_days)
+      num_days, 
+      model=model)
     predictions = predictions_dict["predictions"]
 
     # get the actual case counts 
@@ -75,7 +76,6 @@ for i in range(num_days):
     actual_vals = all_actual[:,i]
     predicted_vals = all_predictions[:,i]
     control_vals = all_control[:,i]
-    print("\tExpected shape 50, got shape:", actual_vals.shape)
     r2 = r2_score(actual_vals, predicted_vals)
     mse = mean_squared_error(actual_vals, predicted_vals)
     print("\tDay", i+1, "MSE is", int(mse), "R2 is", r2)
