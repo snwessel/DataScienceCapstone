@@ -10,6 +10,19 @@ h1 {
   background-color: #1d3557;
 }
 
+.navbar > .navbar-brand {
+  padding-top: 0;
+  margin-right: 0;
+}
+
+.container {
+  margin-top: 3rem;
+}
+
+#predictions, #exploration {
+  padding-top: 3.5rem;
+}
+
 .state-select {
   max-width: 15rem;
 }

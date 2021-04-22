@@ -17,16 +17,20 @@
     <script src="/static/js/distrib_vax_visualization.js"></script>
     <script src="/static/js/policy_visualization.js"></script>
     <!-- Include Custom CSS -->
-    <link rel="stylesheet" href="/static/styles/main.css">
+    <link rel="stylesheet" href="/static/styles/main.css"/>
+    <!-- Include Logo and Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/img/favicon.ico"/>
   </head>
   <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-      <a class="navbar-brand" href="#"></a>
+    <nav class="navbar fixed-top navbar-expand-lg navbar-dark">
+      <a class="navbar-brand" href="#">
+        <img src="/static/img/covid-logo.svg" width="25" height="25" alt="Coronavirus Icon">
+      </a>
       <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav ml-auto">
+        <ul class="navbar-nav text-right ml-auto">
           <li class="nav-item active">
             <a class="nav-link" href="#predictions">Predictions</a>
           </li>
